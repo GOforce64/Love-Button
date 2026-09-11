@@ -7,21 +7,27 @@
 # Firebase project (spec §4.1).
 set -euo pipefail
 
-staged=$(git diff --cached --name-only --diff-filter=ACM)
-[ -z "$staged" ] && exit 0
+git diff --cached --quiet --diff-filter=ACM && exit 0
 
-if git diff --cached -U0 -- $staged \
-    | grep -qE '^\+.*(-----BEGIN [A-Z ]*PRIVATE KEY-----|"type": *"service_account")'; then
+# No pathspec: the diff covers every staged file. Passing names through the
+# shell split any with a space in it, and the scan silently skipped that file.
+# Not a pipe: grep -q stops at the first match, git dies of SIGPIPE writing the
+# rest, and under pipefail that failure read as "no key" — so a large commit
+# with a key near the top went through.
+if grep -qE '^\+.*(-----BEGIN [A-Z ]*PRIVATE KEY-----|"type": *"service_account")' \
+    < <(git diff --cached -U0 --diff-filter=ACM); then
   echo "pre-commit: a private key or service account JSON is in this commit. Refusing."
   echo "  If this is a placeholder in an example file, change the wording so it"
   echo "  does not look like the real thing."
   exit 1
 fi
 
-for f in $staged; do
+# NUL-separated for the same reason. *.gpg is the encrypted secrets bundle: it
+# holds the keystore, and no passphrase is a reason to publish it.
+while IFS= read -r -d '' f; do
   case "$f" in
-    *.jks|*.keystore|keystore.properties|local.properties|.dev.vars|app/google-services.json|*service-account*.json)
+    *.jks|*.keystore|keystore.properties|local.properties|.dev.vars|app/google-services.json|*service-account*.json|*.gpg)
       echo "pre-commit: $f must never be committed. Refusing."
       exit 1 ;;
   esac
-done
+done < <(git diff --cached --name-only -z --diff-filter=ACM)
