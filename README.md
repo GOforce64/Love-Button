@@ -3,7 +3,7 @@
 # Love Button
 
 **Tap a widget on your home screen. Her phone buzzes with a distinct sound.**<br>
-An Android app for exactly two people. That's the whole product.
+An Android app for exactly two people.
 
 [![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](#building-it)
 [![Kotlin · Compose · Glance](https://img.shields.io/badge/Kotlin-Compose%20%C2%B7%20Glance-7F52FF?logo=kotlin&logoColor=white)](app/)
