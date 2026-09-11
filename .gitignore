@@ -23,8 +23,10 @@ captures/
 .cxx/
 app/build/
 
-# secret bundles produced by scripts/secrets-backup.sh — these hold real values
+# secret bundles produced by scripts/secrets-backup.sh — these hold real values.
+# The encrypted one too: it lives beside the scripts that read it, never in git.
 lovie-secrets*.tar.gz
+*.gpg
 worker-secrets.env
 # D1 dumps contain live bearer tokens
 *-d1-backup.sql
