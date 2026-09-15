@@ -48,9 +48,10 @@ runs on free tiers with no card on file.
 
 **[`love-button-spec.md`](love-button-spec.md) is the real document.** It explains
 what was built and, more usefully, what was deliberately not built and why. The
-**[Field Manual](docs/Love%20Button%20Field%20Manual.pdf)** explains the spec: a
-29-page walkthrough of every file, the round trip traced end to end, and the
-console setup that had to be done by hand. This file is just the front door.
+**[Field Manual](docs/Love%20Button%20Field%20Manual.pdf)** explains the spec in
+ten short chapters: the round trip traced tap to gold tile, what the Worker and
+Google each hold, and why each choice was made — every chapter in plain words
+first, then the technical detail. This file is just the front door.
 
 ## What's interesting here
 
@@ -144,7 +145,8 @@ APK.
 
 | Document | What it covers |
 |---|---|
-| **[Field Manual](docs/Love%20Button%20Field%20Manual.pdf)** ([dark](docs/Love%20Button%20Field%20Manual_dark.pdf)) | How the Love Button was built — 29 pages, reads well on a phone. Start here. |
+| **[Field Manual](docs/Love%20Button%20Field%20Manual.pdf)** ([dark](docs/Love%20Button%20Field%20Manual_dark.pdf)) | How the Love Button works — 23 A5 pages with a glossary, reads well on a phone. Start here. Source: [`docs/manual/field-manual.html`](docs/manual/field-manual.html). |
+| **[`docs/HOW-IT-WAS-BUILT.md`](docs/HOW-IT-WAS-BUILT.md)** | The other half: how the work was done, in what order, and what went wrong on real phones first. |
 | **[`love-button-spec.md`](love-button-spec.md)** | The binding spec: what was built, what was deliberately not, and why. |
 | **[`docs/MANUAL-SETUP.md`](docs/MANUAL-SETUP.md)** | Everything that needs a browser login or a phone in your hand. |
 | **[`docs/SECRETS.md`](docs/SECRETS.md)** | What the secrets are, where each one lives, and how to restore them. |
@@ -155,8 +157,8 @@ APK.
 
 - **[`app/`](app/)** — the Android client: Compose screens, Glance widgets, WorkManager jobs
 - **[`server/`](server/)** — the Cloudflare Worker: Hono routes, D1 migrations, tests
-- **[`docs/`](docs/)** — the field manual, setup guide, secrets runbook, and each milestone's design and plan
-- **[`scripts/`](scripts/)** — the pixel-icon generator, secrets backup and restore, the overnight check
+- **[`docs/`](docs/)** — the field manual and its source, setup guide, secrets runbook, and each milestone's design and plan
+- **[`scripts/`](scripts/)** — the pixel-icon generator, the manual's PDF build, secrets backup and restore, the overnight check
 
 ## Known limits, honestly
 

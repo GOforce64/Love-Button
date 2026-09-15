@@ -1,0 +1,1148 @@
+<meta charset="utf-8">
+<title>Love Button Field Manual</title>
+<!--
+  Source of docs/Love Button Field Manual.pdf (A5).
+  Web: publish this file as-is. PDF: node scripts/manual-pdf.mjs, which prints
+  it with a headless Chromium — light and dark — and fills in the Contents page
+  numbers; the print styles at the end of <style> do the layout.
+  How the app was built lives in docs/HOW-IT-WAS-BUILT.md, not here.
+-->
+<meta name="description" content="How the Love Button works: the app, the server and Google's push service, in plain words and then the technical detail.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Quicksand:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  color-scheme: light;
+  /* The app's own Sticker Book palette (ui/Theme.kt) and the ladder's
+     PixelPalette (widget/WidgetArt.kt), lifted for reading. */
+  --ground:#FFF7FA;
+  --surface:#FFFFFF;
+  --wash:#FFEBF2;
+  --ink:#2E2430;
+  --ink-2:#584753;
+  --ink-3:#7A6874;
+  --rule:#F0DCE5;
+  --rule-2:#DFC6D2;
+  --crimson:#D81B60;
+  --rose:#D1447E;
+  --mint:#7FD6C2;
+  --mint-ink:#146B5A;
+  --blossom:#FFB8CE;
+  --butter:#FFCF7A;
+  --code-bg:#FBF0F5;
+  --display:"Fredoka","Quicksand","Trebuchet MS",sans-serif;
+  --body:"Quicksand","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:20px}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-weight:500;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+::selection{background:var(--blossom);color:var(--ink)}
+a{color:var(--crimson);text-underline-offset:3px;text-decoration-thickness:1.5px}
+a:focus-visible,button:focus-visible{outline:2.5px solid var(--crimson);outline-offset:3px;border-radius:4px}
+strong,b{font-weight:700}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin-bottom:5px}
+li::marker{color:var(--rose)}
+
+/* ---------- shell ---------- */
+.page{max-width:1160px;margin:0 auto;padding:0 20px 100px}
+@media (min-width:1100px){.page{display:grid;grid-template-columns:200px minmax(0,1fr);column-gap:60px}}
+main{min-width:0;max-width:720px}
+main p,main li,main dd{max-width:68ch}
+
+/* ---------- cover ---------- */
+.cover{grid-column:1/-1;padding:52px 0 30px;border-bottom:2.5px solid var(--ink);display:grid;gap:26px}
+@media (min-width:780px){.cover{grid-template-columns:minmax(0,1fr) auto;align-items:center}}
+.kicker{font:500 11.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--crimson);margin:0 0 14px}
+.cover h1{font:600 clamp(40px,7vw,68px)/1 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.cover h1 em{font-style:normal;color:var(--crimson)}
+.dek{font-size:19px;line-height:1.5;color:var(--ink-2);max-width:52ch;margin:18px 0 0}
+.facts{display:flex;flex-wrap:wrap;gap:9px;margin:22px 0 0;padding:0;list-style:none}
+.facts li{font:500 12px/1 var(--mono);border:1.5px solid var(--ink);border-radius:999px;padding:7px 11px;background:var(--surface);box-shadow:2px 2px 0 var(--ink);margin:0}
+.hero{display:grid;justify-items:center}
+.hero .big{width:180px;height:180px}
+.hero .big svg{width:100%;height:100%;display:block}
+.strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.strip li{margin:0;text-align:center;display:grid;justify-items:center;gap:3px;min-width:0}
+.strip .ico{width:50px;height:50px}
+.strip .st{font:600 14px/1.2 var(--display)}
+.strip .wd{font-size:12.5px;line-height:1.35;color:var(--ink-2)}
+@media (max-width:520px){.strip .ico{width:38px;height:38px}.strip .wd{display:none}}
+
+/* ---------- contents ---------- */
+.toc-side{display:none}
+@media (min-width:1100px){.toc-side{display:block;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:40px 4px 24px 0}}
+.toc-side p{font:500 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+.toc-side ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+.toc-side li{margin:0}
+.toc-side a{display:grid;grid-template-columns:24px 1fr;gap:6px;font-size:13.5px;line-height:1.3;color:var(--ink-2);text-decoration:none;padding:6px 8px;border-radius:8px}
+.toc-side a b{font:500 11.5px/1.5 var(--mono);color:var(--crimson)}
+.toc-side a:hover,.toc-side a.on{background:var(--wash);color:var(--ink)}
+
+.contents{padding-top:36px}
+.contents h2{font:600 26px/1.1 var(--display);margin:0 0 12px}
+.contents ol{list-style:none;margin:0 0 22px;padding:0;max-width:none}
+.contents li{margin:0;max-width:none}
+.contents a{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:baseline;text-decoration:none;color:var(--ink);padding:7px 0;border-bottom:1px dashed var(--rule-2);font-weight:700}
+.contents .n{font:500 12px/1.4 var(--mono);color:var(--crimson)}
+.contents .pg{font:500 12px/1.4 var(--mono);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.contents a:hover{color:var(--crimson)}
+.howto{background:var(--surface);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:14px 18px;margin:0 3px 0 0;max-width:68ch}
+.howto p:last-child{margin:0}
+
+/* ---------- chapters ---------- */
+.ch{padding-top:60px}
+.ch-head{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:16px;align-items:end;padding-bottom:14px;margin-bottom:20px;border-bottom:2.5px solid var(--ink)}
+.pxn{grid-row:1/3;height:44px;width:auto;display:block;align-self:end;margin-bottom:5px}
+.eyebrow{font:500 11px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--crimson);margin:0 0 6px}
+h2{font:600 clamp(26px,3.6vw,33px)/1.1 var(--display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+h3{font:600 20px/1.25 var(--display);margin:30px 0 10px;text-wrap:balance}
+
+/* ---------- the four layers ---------- */
+.lab{display:flex;align-items:center;gap:8px;font:500 10.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-2);margin:0 0 9px}
+.lab i{width:10px;height:10px;border:1.5px solid var(--ink);flex:none;display:block}
+.plain{background:var(--wash);border-radius:14px;padding:15px 19px 3px;margin:0 0 20px;max-width:70ch}
+.plain p{font-size:18px;line-height:1.58}
+.plain .lab i{background:var(--blossom)}
+.hood>.lab i{background:var(--ink)}
+.why .lab i{background:var(--butter)}
+.code-ref .lab i{background:var(--mint)}
+.why{margin:4px 0 16px}
+.why ul{list-style:none;padding-left:0}
+.why li{position:relative;padding-left:20px}
+.why li::before{content:"";position:absolute;left:1px;top:.58em;width:7px;height:7px;background:var(--butter);outline:1.5px solid var(--ink)}
+.code-ref{display:flex;flex-wrap:wrap;gap:7px 8px;align-items:center;margin:6px 0 10px;max-width:none}
+.code-ref .lab{margin:0 4px 0 0}
+a.f{font:500 12.5px/1.2 var(--mono);color:var(--ink);text-decoration:none;background:var(--surface);border:1.5px solid var(--rule-2);border-radius:7px;padding:5px 8px;word-break:break-all}
+a.f:hover{border-color:var(--ink)}
+a.t{color:inherit;text-decoration:underline dotted var(--rose);text-decoration-thickness:1.6px;text-underline-offset:3.5px}
+a.t:hover{color:var(--crimson)}
+
+/* ---------- code, tables, notes ---------- */
+code{font-family:var(--mono);font-size:.84em;background:var(--code-bg);padding:1px 5px;border-radius:5px;color:var(--ink);overflow-wrap:anywhere}
+pre{font:400 13px/1.6 var(--mono);background:var(--code-bg);border:1px solid var(--rule);border-radius:12px;padding:13px 15px;overflow-x:auto;margin:0 0 18px;color:var(--ink);max-width:100%}
+pre code{background:none;padding:0;font-size:inherit;overflow-wrap:normal}
+.cm{color:var(--ink-3)}
+.tw{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:15px;line-height:1.48}
+th{text-align:left;font:500 10.5px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);padding:0 12px 7px 0;border-bottom:2px solid var(--ink);vertical-align:bottom}
+td{padding:8px 12px 8px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.m,.m{font-family:var(--mono);font-size:13px}
+td.nw{white-space:nowrap}
+td .ico{width:34px;height:34px;display:block}
+.note{background:var(--surface);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:13px 17px;margin:4px 3px 20px 0;max-width:68ch}
+.note .tag{display:block;font:500 10.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;margin-bottom:8px;color:var(--crimson)}
+.note p:last-child{margin-bottom:0}
+
+/* ---------- the trace ---------- */
+ol.trace{list-style:none;margin:0 0 20px;padding:0;max-width:none}
+ol.trace li{display:grid;grid-template-columns:24px 86px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid var(--rule);margin:0;max-width:none}
+.trace .no{font:500 12px/2 var(--mono);color:var(--ink-3)}
+.who{font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;border:1.5px solid var(--ink);border-radius:999px;padding:6px 7px;text-align:center;align-self:start;white-space:nowrap;margin-top:2px}
+.who.a{background:var(--blossom)}
+.who.w{background:var(--mint)}
+.trace .tx{max-width:none}
+@media (max-width:600px){ol.trace li{grid-template-columns:22px minmax(0,1fr);gap:5px 10px}.who{grid-column:2;justify-self:start}.trace .tx{grid-column:2}}
+
+/* ---------- diagrams ---------- */
+figure{margin:0}
+figure.dia{margin:6px 0 22px}
+figure.dia .sv{overflow-x:auto}
+figure.dia svg{display:block;width:100%;height:auto;max-width:620px;color:var(--ink)}
+figure.dia svg.min{min-width:520px}
+figure.dia figcaption{font-size:14.5px;line-height:1.5;color:var(--ink-2);margin-top:8px;max-width:66ch}
+.d-bx{stroke:currentColor;stroke-width:2}
+.d-sh{fill:currentColor;stroke:none}
+.d-a{fill:var(--blossom)}
+.d-w{fill:var(--mint)}
+.d-g{fill:var(--butter)}
+.d-s{fill:var(--surface)}
+.d-t{fill:currentColor;font-family:var(--body);font-weight:700;font-size:14.5px}
+.d-l{fill:currentColor;font-family:var(--mono);font-size:11.5px}
+.d-q{fill:var(--ink-2);font-family:var(--mono);font-size:10.5px}
+.d-ln{stroke:currentColor;stroke-width:1.75;fill:none}
+.d-hot{stroke:var(--crimson);stroke-width:2.25;fill:none}
+.d-ht{fill:var(--crimson)}
+.d-ds{stroke-dasharray:6 4}
+.d-life{stroke:var(--rule-2);stroke-width:1.5;stroke-dasharray:3 4}
+.d-mk{fill:currentColor}
+.d-mkc{fill:var(--crimson)}
+.ico{display:inline-block;width:48px;height:48px;vertical-align:middle}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ---------- glossary ---------- */
+dl.gloss{margin:0}
+dl.gloss>div{padding:8px 10px 8px 0;border-bottom:1px solid var(--rule);scroll-margin-top:24px;max-width:70ch}
+dl.gloss>div:target{background:var(--wash);border-radius:10px;padding-left:10px}
+dl.gloss dt{font:600 16px/1.3 var(--display);display:inline}
+dl.gloss dt small{font:500 11px/1 var(--mono);color:var(--ink-3);margin-left:6px}
+dl.gloss dd{margin:2px 0 0}
+
+.gpop{position:fixed;z-index:50;width:min(340px,calc(100vw - 32px));background:var(--surface);color:var(--ink);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:12px 38px 12px 14px;font-size:15px;line-height:1.5}
+.gpop .gt{font:600 17px/1.25 var(--display);margin:0 0 5px}
+.gpop .gt small{font:500 11px var(--mono);color:var(--ink-3);margin-left:6px}
+.gpop .gd{margin:0 0 8px}
+.gpop .gx{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.gpop .gclose{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;border-radius:8px;background:none;font:600 20px/1 var(--display);color:var(--ink-2);cursor:pointer}
+.gpop .gclose:hover{background:var(--wash)}
+
+.end{grid-column:1/-1;margin-top:36px;padding-top:20px;border-top:2.5px solid var(--ink);font:500 11.5px/1.6 var(--mono);color:var(--ink-3)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* ================= print: A5, for the PDF ================= */
+@media print{
+  @page{size:A5;margin:12mm 11mm 14mm;
+    @bottom-center{content:counter(page);font-family:"IBM Plex Mono",monospace;font-size:7pt;color:#7A6874}}
+  @page :first{@bottom-center{content:none}}
+  /* Paper is white: the page margins can't take the ground colour. */
+  :root{--ground:#FFFFFF}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-size:9.6pt;line-height:1.47}
+  .page{display:block;max-width:none;padding:0}
+  .toc-side,.gpop,.end{display:none!important}
+  main{max-width:none}
+  main p,main li,main dd,.plain,.note,.howto,dl.gloss>div,.dek{max-width:none}
+
+  .cover{height:182mm;padding:0;border:0;display:flex;flex-direction:column;justify-content:space-between;break-after:page}
+  .cover h1{font-size:30pt}
+  .kicker{font-size:6.8pt;margin-bottom:9pt}
+  .dek{font-size:10.5pt;margin-top:10pt}
+  .facts{gap:5pt;margin-top:12pt}
+  .facts li{font-size:6.8pt;padding:3.5pt 6pt;box-shadow:1.5px 1.5px 0 var(--ink)}
+  .hero .big{width:48mm;height:48mm}
+  .strip{gap:4pt}
+  .strip .ico{width:12mm;height:12mm}
+  .strip .st{font-size:8.4pt}
+  .strip .wd{display:block;font-size:6.6pt}
+
+  .contents{padding-top:0;break-after:page}
+  .contents h2{font-size:17pt;margin-bottom:6pt}
+  .contents ol{margin-bottom:14pt}
+  .contents a{padding:4pt 0;grid-template-columns:18pt minmax(0,1fr) auto;gap:6pt;font-size:9.6pt}
+  .contents .n,.contents .pg{font-size:7.4pt}
+  .howto{padding:8pt 10pt;border-width:1.3pt;box-shadow:2px 2px 0 var(--ink);border-radius:9pt;font-size:8.8pt}
+
+  .ch{padding-top:14pt}
+  .ch-head{padding-bottom:8pt;margin-bottom:10pt;column-gap:9pt}
+  .pxn{height:24pt;margin-bottom:3pt}
+  .eyebrow{font-size:6.6pt}
+  h2{font-size:16pt}
+  h3{font-size:11.5pt;margin:13pt 0 5pt}
+  .lab{font-size:6.3pt;margin-bottom:5pt;gap:5pt}
+  .lab i{width:6.5pt;height:6.5pt;border-width:1pt}
+  .plain{padding:8pt 10pt 1pt;border-radius:9pt;margin-bottom:9pt}
+  .plain p{font-size:10.2pt;line-height:1.45}
+  .why{margin:2pt 0 8pt}
+  .why li{padding-left:12pt}
+  .why li::before{width:4.5pt;height:4.5pt;outline-width:1pt}
+  .code-ref{margin:3pt 0 4pt;gap:4pt 5pt}
+  a.f{font-size:6.9pt;padding:2.5pt 4pt;border-width:1pt;border-radius:4pt}
+  p{margin-bottom:6pt}
+  ul,ol{margin-bottom:8pt;padding-left:13pt}
+  li{margin-bottom:2.5pt}
+  pre{font-size:7.1pt;line-height:1.45;padding:6pt 8pt;border-radius:7pt;white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible;margin-bottom:9pt}
+  code{font-size:.82em}
+  .tw{overflow:visible;margin-bottom:10pt}
+  table{font-size:8.1pt;line-height:1.38}
+  th{font-size:6pt;padding:0 7pt 4pt 0}
+  td{padding:4pt 7pt 4pt 0}
+  td.m,.m{font-size:7.1pt}
+  td .ico{width:7.5mm;height:7.5mm}
+  .note{padding:7pt 9pt;border-width:1.3pt;box-shadow:2px 2px 0 var(--ink);border-radius:9pt;margin-bottom:10pt}
+  .note .tag{font-size:6.3pt;margin-bottom:4pt}
+  ol.trace li{grid-template-columns:12pt 48pt minmax(0,1fr);gap:6pt;padding:4.5pt 0}
+  .trace .no{font-size:7pt}
+  .who{font-size:5.8pt;padding:3pt 4pt;border-width:1pt}
+  figure.dia{margin:3pt 0 10pt}
+  figure.dia svg,figure.dia svg.min{max-width:100%;min-width:0}
+  figure.dia figcaption{font-size:8.2pt;margin-top:4pt}
+  dl.gloss>div{padding:3.2pt 0}
+  dl.gloss dt{font-size:9.4pt}
+  dl.gloss dt small{font-size:6.4pt}
+  dl.gloss dd{font-size:8.6pt;margin-top:1pt}
+  a{color:inherit;text-decoration:none}
+  a.t{text-decoration:underline dotted var(--rose);text-decoration-thickness:1pt;text-underline-offset:2pt}
+  figure,pre,.note,tr,ol.trace li,dl.gloss>div,.plain,.strip li{break-inside:avoid}
+  h2,h3,.lab,.ch-head{break-after:avoid}
+}
+</style>
+
+<div class="page">
+
+<header class="cover">
+  <div>
+    <p class="kicker">Field manual &middot; Love Button 1.0 &middot; September 2026</p>
+    <h1>How the <em>Love Button</em> works</h1>
+    <p class="dek">Tap a widget on your home screen and her phone buzzes with its own sound. This is how that works: first in plain words, then the technical detail.</p>
+    <ul class="facts">
+      <li>4 messages</li>
+      <li>2 phones</li>
+      <li>1 server</li>
+      <li>&pound;0 a month</li>
+    </ul>
+  </div>
+  <div class="hero"><span class="big" data-grid="heart" data-state="seen" data-label="The app's pixel heart, seen: pink with a gold rim"></span></div>
+  <ol class="strip" aria-label="The widget's states">
+    <li><span class="ico" data-ico="heart-idle"></span><span class="st">Idle</span><span class="wd">click the button! (・ω・)</span></li>
+    <li><span class="ico" data-ico="heart-sending"></span><span class="st">Sending</span><span class="wd">on its way to her 0o0</span></li>
+    <li><span class="ico" data-ico="heart-sent"></span><span class="st">Sent</span><span class="wd">traveling in the interwebs (• ε •)</span></li>
+    <li><span class="ico" data-ico="heart-delivered"></span><span class="st">Delivered</span><span class="wd">it buzzed her phone :3</span></li>
+    <li><span class="ico" data-ico="heart-seen"></span><span class="st">Seen</span><span class="wd">she looked at it (&gt;^o^)&gt;</span></li>
+  </ol>
+</header>
+
+<nav class="toc-side" aria-label="Chapters">
+  <p>Chapters</p>
+  <ol>
+    <li><a href="#c1"><b>1</b><span>The big picture</span></a></li>
+    <li><a href="#c2"><b>2</b><span>One tap, end to end</span></a></li>
+    <li><a href="#c3"><b>3</b><span>The server</span></a></li>
+    <li><a href="#c4"><b>4</b><span>Talking to Google</span></a></li>
+    <li><a href="#c5"><b>5</b><span>The app</span></a></li>
+    <li><a href="#c6"><b>6</b><span>Receiving a message</span></a></li>
+    <li><a href="#c7"><b>7</b><span>The ladder and the bubble</span></a></li>
+    <li><a href="#c8"><b>8</b><span>Widgets and pixel art</span></a></li>
+    <li><a href="#c9"><b>9</b><span>Security</span></a></li>
+    <li><a href="#c10"><b>10</b><span>Reliability and limits</span></a></li>
+    <li><a href="#cg"><b>G</b><span>Glossary</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section class="contents" aria-labelledby="contents-h">
+  <h2 id="contents-h">Contents</h2>
+  <ol>
+    <li><a href="#c1"><span class="n">1</span><span>The big picture</span><span class="pg" data-for="c1"></span></a></li>
+    <li><a href="#c2"><span class="n">2</span><span>One tap, end to end</span><span class="pg" data-for="c2"></span></a></li>
+    <li><a href="#c3"><span class="n">3</span><span>The server</span><span class="pg" data-for="c3"></span></a></li>
+    <li><a href="#c4"><span class="n">4</span><span>Talking to Google</span><span class="pg" data-for="c4"></span></a></li>
+    <li><a href="#c5"><span class="n">5</span><span>The app</span><span class="pg" data-for="c5"></span></a></li>
+    <li><a href="#c6"><span class="n">6</span><span>Receiving a message</span><span class="pg" data-for="c6"></span></a></li>
+    <li><a href="#c7"><span class="n">7</span><span>The ladder and the bubble</span><span class="pg" data-for="c7"></span></a></li>
+    <li><a href="#c8"><span class="n">8</span><span>Widgets and pixel art</span><span class="pg" data-for="c8"></span></a></li>
+    <li><a href="#c9"><span class="n">9</span><span>Security</span><span class="pg" data-for="c9"></span></a></li>
+    <li><a href="#c10"><span class="n">10</span><span>Reliability and limits</span><span class="pg" data-for="c10"></span></a></li>
+    <li><a href="#cg"><span class="n">G</span><span>Glossary</span><span class="pg" data-for="cg"></span></a></li>
+  </ol>
+  <div class="howto">
+    <p><strong>How to read it.</strong> Each chapter opens with a pink <em>In plain words</em> box; read only those and you&rsquo;ll still understand the app. Below it come <em>Under the hood</em> (how it really works) and <em>Why</em> (the reason for a choice).</p>
+    <p>Underlined words are explained in the glossary at the back; on the web, tap one to see its meaning in place. The sender&rsquo;s phone is <strong>Phone A</strong>, the recipient&rsquo;s is <strong>Phone B</strong>; both run the same app. Code excerpts are real, trimmed; notes after <span class="m">&larr;</span> were added.</p>
+  </div>
+</section>
+
+<!-- ======================= 1 ======================= -->
+<section class="ch" id="c1">
+  <header class="ch-head">
+    <svg class="pxn" data-n="1" role="img" aria-label="Chapter 1"></svg>
+    <p class="eyebrow">Overview</p>
+    <h2>The big picture</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>The Love Button sends one of four fixed messages to the other phone: &ldquo;I love you&rdquo;, &ldquo;Thinking of you&rdquo;, &ldquo;Miss you&rdquo; or &ldquo;Call me when you can&rdquo;. Each has its own home-screen <a class="t" href="#g-widget">widget</a>, pixel picture and sound, so she knows which one it is without looking. The sender&rsquo;s widget shows the message travelling and turns gold once she&rsquo;s seen it.</p>
+    <p>Phones can&rsquo;t reach each other directly: they have no fixed address and are usually asleep. So a small <a class="t" href="#g-server">server</a> that both can always reach carries the message, and it asks Google&rsquo;s push service, the only thing that can wake a sleeping Android phone, to deliver it.</p>
+  </div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <ul>
+      <li>Phones sit behind <a class="t" href="#g-nat">NAT</a>: they can connect out to the internet but nothing can connect in. <a class="t" href="#g-doze">Doze</a> also cuts idle apps off the network. The one line that stays open into an Android phone is <a class="t" href="#g-play-services">Google Play Services</a>&rsquo; connection to Google, and <a class="t" href="#g-fcm">FCM</a> is how a server sends down it.</li>
+      <li>Using FCM needs a Google <a class="t" href="#g-service-account">service-account</a> <a class="t" href="#g-private-key">private key</a> that can push to any phone in the <a class="t" href="#g-firebase">Firebase</a> project. Anyone can unpack an <a class="t" href="#g-apk">APK</a>, so the key can&rsquo;t go in the app; it lives only on the server.</li>
+    </ul>
+  </div>
+
+  <figure class="dia">
+    <div class="sv">
+    <svg viewBox="0 0 600 336" role="img" aria-label="Phones send requests up to the Worker; the Worker asks FCM to push down to the other phone. The message goes Phone A, Worker, FCM, Phone B; the receipt comes back Phone B, Worker, FCM, Phone A.">
+      <defs>
+        <marker id="m1k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-mk" d="M0,0L10,5L0,10z"/></marker>
+        <marker id="m1c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-mkc" d="M0,0L10,5L0,10z"/></marker>
+      </defs>
+      <rect class="d-s d-bx" x="424" y="10" width="160" height="28" rx="8" style="stroke-width:1.5"/>
+      <text class="d-q" x="504" y="28" text-anchor="middle">D1 &middot; the database</text>
+      <rect class="d-s d-bx" x="424" y="46" width="160" height="28" rx="8" style="stroke-width:1.5"/>
+      <text class="d-q" x="504" y="64" text-anchor="middle">KV &middot; the cache</text>
+      <path class="d-ln" d="M375,40 L424,24 M375,62 L424,60"/>
+      <rect class="d-sh" x="228" y="27" width="150" height="58" rx="12"/>
+      <rect class="d-w d-bx" x="225" y="24" width="150" height="58" rx="12"/>
+      <text class="d-t" x="300" y="50" text-anchor="middle">The Worker</text>
+      <text class="d-q" x="300" y="68" text-anchor="middle">Cloudflare</text>
+      <rect class="d-sh" x="228" y="249" width="150" height="58" rx="12"/>
+      <rect class="d-g d-bx" x="225" y="246" width="150" height="58" rx="12"/>
+      <text class="d-t" x="300" y="272" text-anchor="middle">FCM</text>
+      <text class="d-q" x="300" y="290" text-anchor="middle">Google&rsquo;s push service</text>
+      <rect class="d-sh" x="27" y="139" width="138" height="58" rx="12"/>
+      <rect class="d-a d-bx" x="24" y="136" width="138" height="58" rx="12"/>
+      <text class="d-t" x="93" y="162" text-anchor="middle">Phone A</text>
+      <text class="d-q" x="93" y="180" text-anchor="middle">sender</text>
+      <rect class="d-sh" x="441" y="139" width="138" height="58" rx="12"/>
+      <rect class="d-a d-bx" x="438" y="136" width="138" height="58" rx="12"/>
+      <text class="d-t" x="507" y="162" text-anchor="middle">Phone B</text>
+      <text class="d-q" x="507" y="180" text-anchor="middle">recipient</text>
+      <path class="d-hot" d="M146,134 L228,88" marker-end="url(#m1c)"/>
+      <text class="d-l d-ht" x="176" y="100" text-anchor="end">1 &middot; POST /v1/send</text>
+      <path class="d-hot" d="M290,84 L290,242" marker-end="url(#m1c)"/>
+      <text class="d-l d-ht" x="281" y="168" text-anchor="end">2 &middot; push, HIGH</text>
+      <path class="d-hot" d="M372,248 L454,198" marker-end="url(#m1c)"/>
+      <text class="d-l d-ht" x="424" y="244">3 &middot; wakes, buzzes</text>
+      <path class="d-ln d-ds" d="M454,134 L372,88" marker-end="url(#m1k)"/>
+      <text class="d-l" x="424" y="106">4 &middot; POST /v1/receipts</text>
+      <path class="d-ln d-ds" d="M310,84 L310,242" marker-end="url(#m1k)"/>
+      <text class="d-l" x="319" y="168">5 &middot; push, NORMAL</text>
+      <path class="d-ln d-ds" d="M228,248 L146,198" marker-end="url(#m1k)"/>
+      <text class="d-l" x="176" y="244" text-anchor="end">6 &middot; tile lights up</text>
+      <path class="d-hot" d="M24,326 L56,326"/>
+      <text class="d-q" x="62" y="330">the message</text>
+      <path class="d-ln d-ds" d="M150,326 L182,326"/>
+      <text class="d-q" x="188" y="330">the receipt</text>
+    </svg>
+    </div>
+    <figcaption>Phones only ever talk <em>up</em> to the Worker, over <a class="t" href="#g-https">HTTPS</a>, and only ever hear back <em>down</em> through FCM.</figcaption>
+  </figure>
+
+  <div class="tw"><table>
+    <thead><tr><th>Player</th><th>Runs on</th><th>Knows</th></tr></thead>
+    <tbody>
+      <tr><td><b>Phone A, Phone B</b></td><td>The two phones, same app</td><td>Its own <a class="t" href="#g-bearer-token">bearer token</a>, which person it is, the partner&rsquo;s name, the latest message</td></tr>
+      <tr><td><b>The Worker</b></td><td>Cloudflare</td><td>Every phone&rsquo;s push address, seven days of messages, the Google key</td></tr>
+      <tr><td><b>FCM</b></td><td>Google</td><td>Only the push itself: a message number, an id, a name, a time</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li><strong>The push carries a number, never words.</strong> Her phone gets <code>msg_id: 3</code> and looks up the text, picture and sound itself. The words never pass through Google.</li>
+      <li><strong>No request names the recipient.</strong> The server works it out as <code>3 &minus; sender&rsquo;s number</code> (people are 1 and 2), so there&rsquo;s nothing to fake: even a stolen token can only message its own partner.</li>
+    </ul>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Part</th><th>Built with</th></tr></thead>
+    <tbody>
+      <tr><td>The app</td><td><a class="t" href="#g-kotlin">Kotlin</a>, <a class="t" href="#g-compose">Jetpack Compose</a> (screens), <a class="t" href="#g-glance">Glance</a> (widgets), <a class="t" href="#g-workmanager">WorkManager</a> (background jobs), <a class="t" href="#g-datastore">DataStore</a> (storage), <a class="t" href="#g-okhttp">OkHttp</a> (network), Firebase Messaging (receiving pushes)</td></tr>
+      <tr><td>The server</td><td><a class="t" href="#g-typescript">TypeScript</a>, <a class="t" href="#g-hono">Hono</a>, <a class="t" href="#g-worker">Cloudflare Workers</a>, <a class="t" href="#g-d1">D1</a> (database), <a class="t" href="#g-kv">KV</a> (cache)</td></tr>
+      <tr><td>Cost</td><td>Free tiers only: &pound;0 a month, no card on file</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ======================= 2 ======================= -->
+<section class="ch" id="c2">
+  <header class="ch-head">
+    <svg class="pxn" data-n="2" role="img" aria-label="Chapter 2"></svg>
+    <p class="eyebrow">End to end</p>
+    <h2>One tap, end to end</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>You tap &ldquo;Miss you&rdquo;. Your phone gives the tap an id and tells the Worker &ldquo;message 3&rdquo;. The Worker checks it&rsquo;s you, writes the message down and asks Google to wake her phone. Her phone plays the Miss-you sound and reports &ldquo;delivered&rdquo;, and your widget turns pink. When she looks at her phone it reports &ldquo;seen&rdquo;, and your widget turns gold. It normally takes a few seconds.</p>
+  </div>
+
+  <figure class="dia">
+    <div class="sv">
+    <svg class="min" viewBox="0 0 600 426" role="img" aria-label="Sequence of one send: Phone A sends to the Worker, the Worker pushes through FCM to Phone B, and two receipts come back the same way to Phone A.">
+      <defs>
+        <marker id="m2k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-mk" d="M0,0L10,5L0,10z"/></marker>
+        <marker id="m2c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-mkc" d="M0,0L10,5L0,10z"/></marker>
+      </defs>
+      <path class="d-life" d="M70,44V420M235,44V420M385,44V420M530,44V420"/>
+      <rect class="d-a d-bx" x="16" y="8" width="108" height="34" rx="9"/>
+      <text class="d-t" x="70" y="30" text-anchor="middle" style="font-size:13.5px">Phone A</text>
+      <rect class="d-w d-bx" x="181" y="8" width="108" height="34" rx="9"/>
+      <text class="d-t" x="235" y="30" text-anchor="middle" style="font-size:13.5px">Worker</text>
+      <rect class="d-g d-bx" x="331" y="8" width="108" height="34" rx="9"/>
+      <text class="d-t" x="385" y="30" text-anchor="middle" style="font-size:13.5px">FCM</text>
+      <rect class="d-a d-bx" x="476" y="8" width="108" height="34" rx="9"/>
+      <text class="d-t" x="530" y="30" text-anchor="middle" style="font-size:13.5px">Phone B</text>
+      <path class="d-hot" d="M72,74H231" marker-end="url(#m2c)"/>
+      <text class="d-l d-ht" x="152" y="67" text-anchor="middle">1 send {msg_id, send_id}</text>
+      <text class="d-q" x="243" y="98">checks you, saves the row</text>
+      <path class="d-hot" d="M237,124H381" marker-end="url(#m2c)"/>
+      <text class="d-l d-ht" x="310" y="117" text-anchor="middle">2 push &middot; HIGH</text>
+      <path class="d-ln d-ds" d="M233,152H74" marker-end="url(#m2k)"/>
+      <text class="d-l" x="152" y="145" text-anchor="middle">3 reply {sent_at}</text>
+      <path class="d-hot" d="M387,184H526" marker-end="url(#m2c)"/>
+      <text class="d-l d-ht" x="457" y="177" text-anchor="middle">4 deliver</text>
+      <text class="d-q" x="522" y="208" text-anchor="end">sound + notification</text>
+      <path class="d-ln d-ds" d="M528,240H239" marker-end="url(#m2k)"/>
+      <text class="d-l" x="457" y="233" text-anchor="middle">5 delivered</text>
+      <path class="d-ln d-ds" d="M237,270H381" marker-end="url(#m2k)"/>
+      <text class="d-l" x="310" y="263" text-anchor="middle">6 push &middot; NORMAL</text>
+      <path class="d-ln d-ds" d="M383,300H74" marker-end="url(#m2k)"/>
+      <text class="d-l" x="152" y="293" text-anchor="middle">7 tile turns pink</text>
+      <path class="d-ln d-ds" d="M528,342H239" marker-end="url(#m2k)"/>
+      <text class="d-l" x="457" y="335" text-anchor="middle">8 seen</text>
+      <path class="d-ln d-ds" d="M237,370H381" marker-end="url(#m2k)"/>
+      <text class="d-l" x="310" y="363" text-anchor="middle">9 push &middot; NORMAL</text>
+      <path class="d-ln d-ds" d="M383,400H74" marker-end="url(#m2k)"/>
+      <text class="d-l" x="152" y="393" text-anchor="middle">10 tile turns gold</text>
+    </svg>
+    </div>
+    <figcaption>Time runs downwards. Step 7 travels a different route from step 3, so on a slow connection it can reach Phone A first.</figcaption>
+  </figure>
+
+  <ol class="trace">
+    <li><span class="no">1</span><span class="who a">Phone A</span><div class="tx"><strong>Tap.</strong> <code>SendAction</code> shows the half-filled heart, then <code>beginSend()</code> makes a <code>send_id</code> (a <a class="t" href="#g-uuid">UUID</a>), saves it with the tap time, and queues two jobs: <code>SendWorker</code> (waits for internet) and <code>TimeoutWorker</code> (waits 20 seconds).</div></li>
+    <li><span class="no">2</span><span class="who a">Phone A</span><div class="tx"><strong>Send.</strong> <code>SendWorker</code> notes which widget the <code>send_id</code> belongs to, then sends <code>POST /v1/send</code> with <code>{"msg_id":3,"send_id":"&hellip;"}</code> and the phone&rsquo;s bearer token. No recipient.</div></li>
+    <li><span class="no">3</span><span class="who w">Worker</span><div class="tx"><strong>Who is it?</strong> It hashes the token with <a class="t" href="#g-sha-256">SHA-256</a> and finds the phone&rsquo;s row. That, and only that, decides the sender.</div></li>
+    <li><span class="no">4</span><span class="who w">Worker</span><div class="tx"><strong>Check and save.</strong> Under 500 sends this hour, <code>msg_id</code> is 1&ndash;4, <code>send_id</code> is a UUID; otherwise an error <a class="t" href="#g-status-code">status code</a> (429 or 400). It saves the message with <code>to = 3 &minus; from</code> and the server&rsquo;s clock, <code>sent_at</code>.</div></li>
+    <li><span class="no">5</span><span class="who w">Worker</span><div class="tx"><strong>Push.</strong> It asks FCM for a <a class="t" href="#g-data-message">data-only</a>, HIGH-priority push to each of her phones, then replies to Phone A with <code>sent_at</code>. Phone A&rsquo;s tile turns crimson: <em>sent</em>.</div></li>
+    <li><span class="no">6</span><span class="who a">Phone B</span><div class="tx"><strong>Buzz.</strong> Play Services wakes the app; <code>PushService</code> posts the notification on the &ldquo;Miss you&rdquo; <a class="t" href="#g-notification-channel">channel</a>, which plays its sound, then reports <em>delivered</em>. If she&rsquo;s looking at her phone it also reports <em>seen</em>; if not, it waits for her next unlock.</div></li>
+    <li><span class="no">7</span><span class="who w">Worker</span><div class="tx"><strong>Receipt.</strong> <code>POST /v1/receipts</code>: only the recipient may acknowledge (403 otherwise). It records the time and pushes the receipt to the sender at NORMAL priority.</div></li>
+    <li><span class="no">8</span><span class="who a">Phone A</span><div class="tx"><strong>The tile climbs.</strong> Pink for delivered, gold for seen, but only within 20 seconds of the tap. Gold stays for 4 seconds, then the tile rests.</div></li>
+  </ol>
+
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li><strong>The phone makes the id, not the server.</strong> The receipt can overtake the server&rsquo;s reply. Because Phone A wrote down which tile the id belongs to before sending, it always knows which tile to light.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= 3 ======================= -->
+<section class="ch" id="c3">
+  <header class="ch-head">
+    <svg class="pxn" data-n="3" role="img" aria-label="Chapter 3"></svg>
+    <p class="eyebrow">Server side</p>
+    <h2>The server</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>The Worker is about 960 lines of code that Cloudflare runs whenever a request arrives. It holds the Google key, decides who may send what to whom, and is the only place anything is stored outside the two phones.</p>
+  </div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <ul>
+      <li><strong>No machine to run.</strong> Cloudflare runs the code on <a class="t" href="#g-workerd">workerd</a>, built on <a class="t" href="#g-v8">V8</a>, in a lightweight <a class="t" href="#g-isolate">isolate</a>, in the data centre nearest the caller, only while a request lasts. It gets web-standard tools (<code>fetch</code>, <a class="t" href="#g-webcrypto">WebCrypto</a>), not <a class="t" href="#g-node">Node.js</a>. The free plan allows 100,000 requests a day and 10 milliseconds of <a class="t" href="#g-cpu">CPU</a> per request.</li>
+      <li><strong>Routing.</strong> Hono sends each request to the function that handles it. Every reply is <a class="t" href="#g-json">JSON</a>, and every error has one shape: <code>{"error": "rate_limited", "message": "&hellip;"}</code>.</li>
+      <li><strong>No passwords.</strong> <code>wrangler.toml</code> hands the code its database and cache as ready-made objects (<a class="t" href="#g-binding">bindings</a>: <code>env.DB</code>, <code>env.TOKEN_CACHE</code>). Public settings (the Firebase project id, the two names) are plain vars. The three <a class="t" href="#g-secret">secrets</a> (two <a class="t" href="#g-enrolment-code">enrolment codes</a> and the service-account key) are uploaded with <a class="t" href="#g-wrangler">wrangler</a>, stored encrypted, and can never be read back.</li>
+    </ul>
+  </div>
+
+  <h3>The database</h3>
+  <p>D1 is <a class="t" href="#g-sqlite">SQLite</a> run by Cloudflare. It has two tables:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Table</th><th>Columns</th></tr></thead>
+    <tbody>
+      <tr><td class="m">devices</td><td>One row per phone: <code>id</code>, <code>person</code> (1 or 2, enforced by a <a class="t" href="#g-check-constraint">CHECK constraint</a>, so a third person is impossible), <code>auth_hash</code> (SHA-256 of its token), <code>fcm_token</code> (its push address; empty for a <a class="t" href="#g-send-only">send-only device</a>), <code>label</code>, <code>created_at</code>, <code>updated_at</code>.</td></tr>
+      <tr><td class="m">sends</td><td>One row per message: <code>id</code> (the phone&rsquo;s <code>send_id</code>), <code>from_person</code>, <code>to_person</code>, <code>msg_id</code>, <code>sent_at</code>, <code>delivered_at</code>, <code>seen_at</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Times are <a class="t" href="#g-epoch">epoch seconds</a>. A <a class="t" href="#g-cron">cron</a> job deletes messages older than 7 days every night at 03:17 <a class="t" href="#g-utc">UTC</a>: the rows are only needed for receipts and the hourly limit, not as a history. KV holds two short-lived things: the Google access token (55 minutes) and a count of enrolment attempts per <a class="t" href="#g-ip-address">IP address</a> (one hour).</p>
+
+  <h3>The six endpoints</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Endpoint</th><th>Needs</th><th>Does</th></tr></thead>
+    <tbody>
+      <tr><td class="m nw">GET /health</td><td>nothing</td><td>Answers <code>{"ok":true}</code>.</td></tr>
+      <tr><td class="m nw">POST /v1/enroll</td><td>a code</td><td>Trades an enrolment code for a 256-<a class="t" href="#g-bit">bit</a> bearer token, sent once; only its hash is kept. 5 tries an hour per IP address.</td></tr>
+      <tr><td class="m nw">POST /v1/devices</td><td>token</td><td>Saves the phone&rsquo;s new push address.</td></tr>
+      <tr><td class="m nw">DELETE /v1/devices</td><td>token</td><td>Deletes the phone (the app has no button for this yet).</td></tr>
+      <tr><td class="m nw">POST /v1/send</td><td>token</td><td>Sends a message (Chapter 2). Limit: 500 an hour per person.</td></tr>
+      <tr><td class="m nw">POST /v1/receipts</td><td>token</td><td>Records delivered or seen. Recipient only.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li><strong>Identity only comes from the token.</strong> The <code>requireDevice</code> <a class="t" href="#g-middleware">middleware</a> hashes it and looks it up; nothing ever reads a sender from the request body.</li>
+      <li><strong>Nothing can happen twice.</strong> A message is saved with <code>INSERT OR IGNORE</code>, so a repeated id is refused (409) instead of overwritten. A receipt uses <code>COALESCE</code> (&ldquo;keep the time already recorded&rdquo;), so repeating it changes nothing and the state never goes backwards.</li>
+      <li><strong>No <a class="t" href="#g-sql-injection">SQL injection</a>.</strong> Values are passed separately from the <a class="t" href="#g-sql">SQL</a> as placeholders (<code>?</code>), never pasted into it.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= 4 ======================= -->
+<section class="ch" id="c4">
+  <header class="ch-head">
+    <svg class="pxn" data-n="4" role="img" aria-label="Chapter 4"></svg>
+    <p class="eyebrow">Server &harr; Google</p>
+    <h2>Talking to Google</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>To wake her phone, the Worker asks FCM to deliver a small message. Google only accepts that from the project&rsquo;s owner, so the Worker signs a note with its private key, swaps it for a pass that lasts an hour, and shows the pass with every push.</p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Identity</th><th>What it is</th><th>Kept</th></tr></thead>
+    <tbody>
+      <tr><td class="m">google-services.json</td><td>The app&rsquo;s identity: project id and an <a class="t" href="#g-api-key">API key</a> that only works for this app.</td><td>Inside the APK. Not secret.</td></tr>
+      <tr><td>Service-account key</td><td>The server&rsquo;s identity: an <a class="t" href="#g-rsa">RSA</a> private key that can push to any phone in the project.</td><td>Only as a Worker secret.</td></tr>
+      <tr><td><a class="t" href="#g-registration-token">Registration token</a></td><td>A phone&rsquo;s push address, made by Play Services. It can change.</td><td>In <code>devices.fcm_token</code>.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <p>Getting the pass is <a class="t" href="#g-oauth">OAuth 2.0</a>&rsquo;s signed-token flow:</p>
+    <ol>
+      <li>Write a <a class="t" href="#g-jwt">JWT</a> saying who is asking (the key&rsquo;s email), for what (sending pushes) and until when (one hour).</li>
+      <li>Sign it with the private key using <a class="t" href="#g-rs256">RS256</a> through WebCrypto.</li>
+      <li>Send it to <code>oauth2.googleapis.com/token</code>. Google checks the signature and returns an <a class="t" href="#g-access-token">access token</a> valid for one hour.</li>
+      <li>Keep it in KV for 55 minutes, and send it with each push:</li>
+    </ol>
+  </div>
+<pre><code>POST https://fcm.googleapis.com/v1/projects/lovieapp-b4068/messages:send
+Authorization: Bearer ya29.&hellip;              <span class="cm">&larr; the access token</span>
+
+{ "message": {
+    "token": "&lt;her phone's registration token&gt;",
+    "data": { "type": "msg", "send_id": "8b1f5a4e-&hellip;", "msg_id": "3",
+              "from_name": "Hubby", "sent_at": "1788274056" },
+    "android": { "priority": "HIGH" } } }</code></pre>
+
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li><strong>The cache is required.</strong> An RSA signature uses nearly the whole 10-millisecond CPU allowance, so signing on every send would break the free plan. With the cache, about one request an hour pays for it.</li>
+      <li><strong>Data-only.</strong> A <a class="t" href="#g-notification-message">notification message</a> is drawn by Android itself and skips the app&rsquo;s channels, and with them the four sounds. A data message is handed to the app&rsquo;s code, which picks the channel.</li>
+      <li><strong>HIGH for messages, NORMAL for receipts.</strong> HIGH wakes a phone even in Doze. Receipts aren&rsquo;t urgent, and NORMAL saves battery.</li>
+      <li><strong>Only <a class="t" href="#g-unregistered">UNREGISTERED</a> deletes a phone.</strong> Other errors can come from a bad request that fails for every phone at once. Deleting them all would lock her out until she enrolled again.</li>
+    </ul>
+  </div>
+  <p>When Play Services gives a phone a new address, the app sends it to <code>/v1/devices</code> through a background job. FCM holds messages for a phone that&rsquo;s switched off (by default for up to four weeks), but a <a class="t" href="#g-force-stop">force-stopped</a> app never receives them.</p>
+</section>
+
+<!-- ======================= 5 ======================= -->
+<section class="ch" id="c5">
+  <header class="ch-head">
+    <svg class="pxn" data-n="5" role="img" aria-label="Chapter 5"></svg>
+    <p class="eyebrow">Phone side</p>
+    <h2>The app</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>The app is the screen you open plus the four widgets. Behind them are background jobs that do the sending, and a few small files that remember what&rsquo;s going on.</p>
+  </div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <ul>
+      <li><strong>Start-up.</strong> Android starts the app&rsquo;s <a class="t" href="#g-process">process</a> for anything: opening it, a push, a widget tap. Each time, <code>LoveButtonApp</code> creates the notification channels and starts listening for unlocks. The screen shows Enrol until the phone is enrolled, then Home.</li>
+      <li><strong>Enrolling.</strong> Once per phone: the app gets its push address from Play Services, sends it with the enrolment code to <code>/v1/enroll</code>, and saves the token, person number and partner&rsquo;s name.</li>
+      <li><strong>Storage.</strong> Five small DataStore files in <a class="t" href="#g-app-private">app-private storage</a>, kept out of cloud backups:</li>
+    </ul>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>File</th><th>Holds</th></tr></thead>
+    <tbody>
+      <tr><td class="m">love_button</td><td>The token, which person this phone is, the partner&rsquo;s name.</td></tr>
+      <tr><td class="m">current_send</td><td>The one latest message, shown on the app screen.</td></tr>
+      <tr><td class="m">pending_sends</td><td>Which widget each recent message came from (about 20 seconds).</td></tr>
+      <tr><td class="m">unseen_sends</td><td>Messages that arrived while nobody was looking.</td></tr>
+      <tr><td class="m">delivery_setup</td><td>Whether you confirmed the Xiaomi settings.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tw"><table>
+    <thead><tr><th>Background job</th><th>Waits for</th><th>Does</th></tr></thead>
+    <tbody>
+      <tr><td class="m">SendWorker</td><td>internet</td><td>Sends the message and updates the widget.</td></tr>
+      <tr><td class="m">TimeoutWorker</td><td>20 seconds only</td><td>Turns a widget grey if it&rsquo;s still waiting.</td></tr>
+      <tr><td class="m">ReceiptWorker</td><td>internet</td><td>Reports delivered or seen.</td></tr>
+      <tr><td class="m">RegisterTokenWorker</td><td>internet</td><td>Sends a new push address.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li><strong>Everything goes through WorkManager.</strong> Xiaomi kills app processes routinely (<a class="t" href="#g-process-death">process death</a>). A request started straight from a tap would vanish; a WorkManager job is saved to disk and finishes later.</li>
+      <li><strong>One attempt per message.</strong> A failed send asks for a retry, but WorkManager&rsquo;s first retry comes after 30 seconds, when the 20-second window has closed, so it&rsquo;s dropped. A tap only counts while the sender is still waiting for it.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= 6 ======================= -->
+<section class="ch" id="c6">
+  <header class="ch-head">
+    <svg class="pxn" data-n="6" role="img" aria-label="Chapter 6"></svg>
+    <p class="eyebrow">Phone B</p>
+    <h2>Receiving a message</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>When the push reaches her phone, it plays that message&rsquo;s sound with a notification and tells the server &ldquo;delivered&rdquo;. As soon as she&rsquo;s actually looking at her phone, it tells the server &ldquo;seen&rdquo;.</p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Id</th><th>Message</th><th>Channel</th><th>Sound</th><th>Widget</th></tr></thead>
+    <tbody>
+      <tr><td class="m">1</td><td>I love you</td><td class="m">msg_1</td><td class="m">love.ogg</td><td><span class="ico" data-ico="heart-sent" data-label="Pixel heart"></span></td></tr>
+      <tr><td class="m">2</td><td>Thinking of you</td><td class="m">msg_2</td><td class="m">thinking.ogg</td><td><span class="ico" data-ico="bubble-sent" data-label="Pixel speech bubble"></span></td></tr>
+      <tr><td class="m">3</td><td>Miss you</td><td class="m">msg_3</td><td class="m">miss.ogg</td><td><span class="ico" data-ico="paw-sent" data-label="Pixel paw"></span></td></tr>
+      <tr><td class="m">4</td><td>Call me when you can</td><td class="m">msg_4</td><td class="m">call.ogg</td><td><span class="ico" data-ico="call-sent" data-label="Pixel CALL lettering"></span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <ul>
+      <li><strong>Channels.</strong> Since Android 8, a notification&rsquo;s channel decides its sound. The app has four, created at every start-up (creating an existing one does nothing), each with high importance and its sound: <code>android.resource://com.lovebutton.app/raw/miss</code>.</li>
+      <li><strong>The notification.</strong> Title: the sender&rsquo;s name. Text: the message. A white heart icon, tinted crimson; a new id each time so several messages stack. On Android 13 and newer it needs the notification permission.</li>
+      <li><strong>Delivered</strong> is reported only after the notification has been posted.</li>
+      <li><strong>Seen</strong> means she looked at her phone, not that she tapped the notification: the screen is on <em>and</em> unlocked (not on the <a class="t" href="#g-keyguard">lock screen</a>). If so it&rsquo;s reported at once. If not, the message waits in <code>unseen_sends</code> and <code>UnlockReceiver</code> reports it the next time she unlocks.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <span class="tag">The one thing that can&rsquo;t be undone</span>
+    <p>Android never lets an app change a channel&rsquo;s sound after the channel is created; the only way is to delete it, which resets her settings. So the four sounds were final before the channels first existed.</p>
+  </div>
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li>The sound is addressed by its file name, because resource numbers change between builds while a channel keeps its sound address forever.</li>
+      <li>The unlock listener is registered in code: since Android 8, the unlock <a class="t" href="#g-broadcast">broadcast</a> isn&rsquo;t delivered to listeners declared in the manifest. If Android kills the app before she unlocks, no &ldquo;seen&rdquo; is sent: silence, never a false &ldquo;seen&rdquo;.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= 7 ======================= -->
+<section class="ch" id="c7">
+  <header class="ch-head">
+    <svg class="pxn" data-n="7" role="img" aria-label="Chapter 7"></svg>
+    <p class="eyebrow">Phone A &middot; both phones</p>
+    <h2>The ladder and the bubble</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>The sender&rsquo;s widget climbs a ladder: outline, half-filled, crimson, pink, gold. If nothing comes back within 20 seconds it turns grey instead. The app screen shows the same states, animated, and both phones agree on one &ldquo;latest message&rdquo;.</p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th></th><th>State</th><th>Means</th><th>Shown for</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ico" data-ico="heart-idle" data-label="Outline heart"></span></td><td class="m">IDLE</td><td>Resting.</td><td>&mdash;</td></tr>
+      <tr><td><span class="ico" data-ico="heart-sending" data-label="Half-filled heart"></span></td><td class="m">SENDING</td><td>Tapped; no reply yet.</td><td>Until the request ends</td></tr>
+      <tr><td><span class="ico" data-ico="heart-sent" data-label="Crimson heart"></span></td><td class="m">SENT</td><td>The server has it.</td><td>Up to 20 seconds</td></tr>
+      <tr><td><span class="ico" data-ico="heart-failed" data-label="Grey outline heart"></span></td><td class="m">FAILED</td><td>Failed, or no reply in 20 seconds.</td><td>3 seconds</td></tr>
+      <tr><td><span class="ico" data-ico="heart-delivered" data-label="Pink heart"></span></td><td class="m">DELIVERED</td><td>Her phone showed it.</td><td>Up to 20 seconds</td></tr>
+      <tr><td><span class="ico" data-ico="heart-seen" data-label="Pink heart with gold rim"></span></td><td class="m">SEEN</td><td>She looked at her phone.</td><td>4 seconds</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="dia">
+    <div class="sv">
+    <svg class="min" viewBox="0 0 600 196" role="img" aria-label="Three sends over 25 seconds: one climbs to gold and rests; one gets no reply and turns grey at 20 seconds; one has no signal and turns grey at 20 seconds.">
+      <rect x="112" y="4" width="11" height="11" fill="#D1447E"/><text class="d-q" x="128" y="14">sending</text>
+      <rect x="190" y="4" width="11" height="11" fill="#D81B60"/><text class="d-q" x="206" y="14">sent</text>
+      <rect x="248" y="4" width="11" height="11" fill="#FF6FA5"/><text class="d-q" x="264" y="14">delivered</text>
+      <rect x="342" y="4" width="11" height="11" fill="#FFC64B"/><text class="d-q" x="358" y="14">seen</text>
+      <rect x="400" y="4" width="11" height="11" fill="#A9A2AD"/><text class="d-q" x="416" y="14">failed</text>
+      <path d="M486.4,34V152" style="stroke:var(--crimson);stroke-width:1.5;stroke-dasharray:4 4"/>
+      <text class="d-l d-ht" x="486.4" y="30" text-anchor="middle">window closes &middot; 20 s</text>
+      <text class="d-l" x="8" y="61">It lands</text>
+      <rect x="112" y="46" width="18.7" height="22" fill="#D1447E"/>
+      <rect x="130.7" y="46" width="37.5" height="22" fill="#D81B60"/>
+      <rect x="168.2" y="46" width="56.1" height="22" fill="#FF6FA5"/>
+      <rect x="224.3" y="46" width="74.9" height="22" fill="#FFC64B"/>
+      <text x="261.7" y="61" text-anchor="middle" style="font:500 10.5px var(--mono);fill:#2E2430">4 s</text>
+      <text class="d-l" x="8" y="101">No reply</text>
+      <rect x="112" y="86" width="18.7" height="22" fill="#D1447E"/>
+      <rect x="130.7" y="86" width="355.7" height="22" fill="#D81B60"/>
+      <text x="308.5" y="101" text-anchor="middle" style="font:500 10.5px var(--mono);fill:#FFFFFF">waiting for a receipt</text>
+      <rect x="486.4" y="86" width="56.2" height="22" fill="#A9A2AD"/>
+      <text x="514.5" y="101" text-anchor="middle" style="font:500 10.5px var(--mono);fill:#2E2430">3 s</text>
+      <text class="d-l" x="8" y="141">No signal</text>
+      <rect x="112" y="126" width="374.4" height="22" fill="#D1447E"/>
+      <text x="299.2" y="141" text-anchor="middle" style="font:500 10.5px var(--mono);fill:#FFFFFF">waiting for a connection</text>
+      <rect x="486.4" y="126" width="56.2" height="22" fill="#A9A2AD"/>
+      <text x="514.5" y="141" text-anchor="middle" style="font:500 10.5px var(--mono);fill:#2E2430">3 s</text>
+      <path class="d-ln" d="M112,164H580M112,164v5M205.6,164v5M299.2,164v5M392.8,164v5M486.4,164v5M580,164v5" style="stroke-width:1.25"/>
+      <text class="d-q" x="112" y="184" text-anchor="middle">0 s</text>
+      <text class="d-q" x="205.6" y="184" text-anchor="middle">5</text>
+      <text class="d-q" x="299.2" y="184" text-anchor="middle">10</text>
+      <text class="d-q" x="392.8" y="184" text-anchor="middle">15</text>
+      <text class="d-q" x="486.4" y="184" text-anchor="middle">20</text>
+      <text class="d-q" x="580" y="184" text-anchor="middle">25 s</text>
+    </svg>
+    </div>
+    <figcaption>Three ways a tap can go. The 20-second window and the 3- and 4-second holds are fixed; when receipts arrive varies.</figcaption>
+  </figure>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <ul>
+      <li><strong>Only forward.</strong> Each state has a rank (IDLE 0, SENDING 1, SENT 2, FAILED 3, DELIVERED 4, SEEN 5), and a receipt is written only if it moves the rank up. Her two receipts can arrive in either order, and a late &ldquo;delivered&rdquo; must not turn gold back to pink.</li>
+      <li><strong>The 20-second window</strong> (<code>PENDING_WINDOW_MS</code>). The app screen shows anything still waiting after 20 seconds as grey. <code>TimeoutWorker</code> greys the widget; it has no network condition, so it also fires with no signal. <code>SendWorker</code> drops a request that only found a connection after the window. Late receipts are still recorded, but never light the widget.</li>
+      <li><strong>One writer at a time.</strong> Every change goes through <code>WidgetStateWriter</code>, which checks and writes in one step, and a timer only resets the picture it put there. That prevents a <a class="t" href="#g-race-condition">race condition</a>.</li>
+      <li><strong>The app screen remembers.</strong> Where the widget goes back to rest, the app keeps showing how the latest message ended. It draws the icon pixel by pixel so it can animate it (rising fill, a ripple, gold running round the edge).</li>
+    </ul>
+  </div>
+
+  <h3>The shared bubble</h3>
+  <p>The app screen&rsquo;s card shows the latest message between you, whoever sent it, and both phones must agree on which that is. An arriving message takes the card if its server time (<code>sent_at</code>) is later. In a tie within the same second, the higher <code>send_id</code> wins. Your own message still in flight has no server time yet, so it gives way, then takes the card back when its reply arrives if what replaced it is older.</p>
+  <div class="why">
+    <p class="lab"><i></i>Why it&rsquo;s built this way</p>
+    <ul>
+      <li>Phone clocks differ, so only the server&rsquo;s clock is compared. It counts whole seconds, so ties are common, and the id tie-break gives the same answer on both phones (a <a class="t" href="#g-total-order">total order</a>).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= 8 ======================= -->
+<section class="ch" id="c8">
+  <header class="ch-head">
+    <svg class="pxn" data-n="8" role="img" aria-label="Chapter 8"></svg>
+    <p class="eyebrow">Phone side</p>
+    <h2>Widgets and pixel art</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>A widget isn&rsquo;t running anything: it&rsquo;s a picture your home screen draws for the app. So each state is a finished picture, and every picture is drawn by a script from a grid of letters in the code.</p>
+  </div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <ul>
+      <li><strong>Widgets.</strong> The home screen (the <a class="t" href="#g-launcher">launcher</a>) is a separate app. A widget reaches it as <a class="t" href="#g-remoteviews">RemoteViews</a> sent across <a class="t" href="#g-ipc">IPC</a>: a few standard building blocks, with no custom drawing or animation. That&rsquo;s why the ladder swaps whole pictures.</li>
+      <li><strong>Four widgets, one class.</strong> The widget list shows four entries (each 2&times;2 cells), all using <code>MessageWidget</code> with a different message id. A tap writes SENDING and calls <code>beginSend()</code>. After a reboot, <code>BootReceiver</code> redraws them.</li>
+      <li><strong>Pixel art.</strong> <code>scripts/pixel_icons.py</code> holds each icon as a grid of letters (<code>X</code> solid, <code>.</code> empty) and turns it into the 20 widget pictures (4 icons &times; 5 states).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= 9 ======================= -->
+<section class="ch" id="c9">
+  <header class="ch-head">
+    <svg class="pxn" data-n="9" role="img" aria-label="Chapter 9"></svg>
+    <p class="eyebrow">Everywhere</p>
+    <h2>Security</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>The code is public, so safety can&rsquo;t depend on it being secret. It depends on three rules the server always checks, tokens that are useless if copied, and three secrets that live only on the server.</p>
+  </div>
+
+  <div class="hood">
+    <p class="lab"><i></i>Under the hood</p>
+    <p>The three <a class="t" href="#g-invariant">invariants</a>, each with a test:</p>
+    <ol>
+      <li><strong>The sender is the phone that proved who it is.</strong> Nothing reads a sender from the request.</li>
+      <li><strong>The recipient is worked out on the server</strong>, as <code>3 &minus; from_person</code>. No request can name one.</li>
+      <li><strong>Only the recipient may acknowledge a message.</strong> Otherwise a sender, who knows every <code>send_id</code>, could fake &ldquo;seen&rdquo;.</li>
+    </ol>
+    <ul>
+      <li><strong>Tokens</strong> are 32 random bytes (256 bits), sent once and stored only as a SHA-256 hash, so a stolen copy of the database holds no working keys.</li>
+      <li><strong>Enrolment codes</strong> are 48 <a class="t" href="#g-hex">hex</a> characters, one per person, limited to 5 tries an hour, and checked with a <a class="t" href="#g-constant-time">constant-time comparison</a>, so timing reveals nothing (a <a class="t" href="#g-timing-attack">timing attack</a>). Changing a code stops new enrolments but doesn&rsquo;t cut off an enrolled phone; for that you delete its row.</li>
+      <li><strong>On the phone</strong>, the token sits in app-private storage and is never logged; the release build can&rsquo;t be inspected over USB. A <a class="t" href="#g-git-hook">pre-commit hook</a> refuses any commit containing a private key or a secrets file.</li>
+    </ul>
+  </div>
+  <p>The three real secrets (the service-account key and the two enrolment codes) live only as Worker secrets and in a password manager; the release <a class="t" href="#g-keystore">keystore</a> that <a class="t" href="#g-signing">signs</a> the app is kept outside the repo. Not covered: someone holding her unlocked phone, and <a class="t" href="#g-e2ee">end-to-end encryption</a>. The pushes pass through Google, but they only ever say &ldquo;message 3&rdquo;.</p>
+</section>
+
+<!-- ======================= 10 ======================= -->
+<section class="ch" id="c10">
+  <header class="ch-head">
+    <svg class="pxn" data-n="10" role="img" aria-label="Chapter 10"></svg>
+    <p class="eyebrow">Reference</p>
+    <h2>Reliability and limits</h2>
+  </header>
+
+  <div class="plain">
+    <p class="lab"><i></i>In plain words</p>
+    <p>Xiaomi&rsquo;s phone software, <a class="t" href="#g-miui">MIUI</a>, kills background apps far more than normal Android. The app can&rsquo;t change those settings itself, so its Delivery setup screen shows where each one is.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Setting</th><th>Default</th><th>What it breaks</th></tr></thead>
+    <tbody>
+      <tr><td>Battery optimisation (Android)</td><td>On</td><td>Background work is delayed. The app asks to be exempt.</td></tr>
+      <tr><td>Autostart (Xiaomi)</td><td>Off for <a class="t" href="#g-sideload">sideloaded</a> apps</td><td>A push can&rsquo;t start the app; widgets aren&rsquo;t redrawn after a reboot.</td></tr>
+      <tr><td>Battery saver (Xiaomi)</td><td>&ldquo;Restricted&rdquo;</td><td>Background work is suspended. Set &ldquo;No restrictions&rdquo;.</td></tr>
+      <tr><td>Lock in recents (Xiaomi)</td><td>Unlocked</td><td>The app is cleared when memory runs low.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The Xiaomi settings can&rsquo;t be read by an app, so you confirm them by hand, and the Home screen shows &ldquo;Finish delivery setup&rdquo; until you do.</p>
+
+  <h3>Limits</h3>
+  <ul>
+    <li><strong>Force stop:</strong> nothing arrives until the app is opened again, and missed messages aren&rsquo;t replayed.</li>
+    <li><strong>China <a class="t" href="#g-rom">ROM</a>:</strong> no Play Services, so no FCM. Both phones must run Xiaomi&rsquo;s Global or European (<a class="t" href="#g-eea">EEA</a>) software.</li>
+    <li><strong>No signal:</strong> the widget greys at 20 seconds and the message is dropped, not sent late.</li>
+    <li><strong>Her phone off:</strong> she gets it when it&rsquo;s back on; your widget will already be grey.</li>
+    <li><strong>No sign-out button:</strong> a retired phone is removed on the server.</li>
+  </ul>
+</section>
+
+<!-- ======================= Glossary ======================= -->
+<section class="ch" id="cg">
+  <header class="ch-head">
+    <svg class="pxn" data-n="G" role="img" aria-label="Glossary"></svg>
+    <p class="eyebrow">Look it up</p>
+    <h2>Glossary</h2>
+  </header>
+  <dl class="gloss">
+    <div id="g-access-token"><dt>Access token</dt><dd>A pass from Google that lasts one hour and lets the Worker send pushes.</dd></div>
+    <div id="g-api-key"><dt>API key <small>Application Programming Interface key</small></dt><dd>A code that identifies an app to a Google service. This one only works for this app, so it isn&rsquo;t secret.</dd></div>
+    <div id="g-apk"><dt>APK <small>Android Package</small></dt><dd>The file an Android app is installed from.</dd></div>
+    <div id="g-app-private"><dt>App-private storage</dt><dd>Files only one app can read; other apps can&rsquo;t open them.</dd></div>
+    <div id="g-bearer-token"><dt>Bearer token</dt><dd>A long random key each phone sends with every request. Whoever holds it is trusted, like cash.</dd></div>
+    <div id="g-binding"><dt>Binding</dt><dd>A database or store Cloudflare hands to the code as a ready-made object, so no password is needed.</dd></div>
+    <div id="g-bit"><dt>Bit</dt><dd>A single 0 or 1. A 256-bit token has more possible values than could ever be guessed.</dd></div>
+    <div id="g-broadcast"><dt>Broadcast</dt><dd>An announcement Android sends to apps that are listening, such as &ldquo;the phone was unlocked&rdquo;.</dd></div>
+    <div id="g-check-constraint"><dt>CHECK constraint</dt><dd>A rule the database itself enforces. Here: <code>person</code> must be 1 or 2.</dd></div>
+    <div id="g-compose"><dt>Compose <small>Jetpack Compose</small></dt><dd>Android&rsquo;s modern way of building screens in Kotlin code.</dd></div>
+    <div id="g-constant-time"><dt>Constant-time comparison</dt><dd>Comparing two secrets in a way that always takes the same time, so the time gives nothing away.</dd></div>
+    <div id="g-cpu"><dt>CPU <small>Central Processing Unit</small></dt><dd>The chip that does the computing.</dd></div>
+    <div id="g-cron"><dt>Cron</dt><dd>A schedule for running a job at set times, such as 03:17 every day.</dd></div>
+    <div id="g-d1"><dt>D1</dt><dd>Cloudflare&rsquo;s database service, based on SQLite.</dd></div>
+    <div id="g-data-message"><dt>Data message</dt><dd>A push handed to the app&rsquo;s own code, which decides what to show.</dd></div>
+    <div id="g-datastore"><dt>DataStore</dt><dd>An Android library for saving small bits of data in private files.</dd></div>
+    <div id="g-doze"><dt>Doze</dt><dd>Android&rsquo;s deep sleep for an idle phone: apps lose network access until a short wake-up window.</dd></div>
+    <div id="g-e2ee"><dt>End-to-end encryption</dt><dd>Encryption only the sender and recipient can read. Not used here; the messages are just numbers.</dd></div>
+    <div id="g-eea"><dt>EEA <small>European Economic Area</small></dt><dd>The EU plus Iceland, Liechtenstein and Norway. Xiaomi&rsquo;s EEA software includes Google Play Services.</dd></div>
+    <div id="g-enrolment-code"><dt>Enrolment code</dt><dd>A long secret code, one per person, typed once on each phone to get its token.</dd></div>
+    <div id="g-epoch"><dt>Epoch seconds</dt><dd>Time counted in seconds since 1 January 1970, UTC.</dd></div>
+    <div id="g-fcm"><dt>FCM <small>Firebase Cloud Messaging</small></dt><dd>Google&rsquo;s service for sending pushes to phones; the only way to wake a sleeping Android phone.</dd></div>
+    <div id="g-firebase"><dt>Firebase</dt><dd>Google&rsquo;s set of services for apps. This app only uses Cloud Messaging.</dd></div>
+    <div id="g-force-stop"><dt>Force stop</dt><dd>A button in Android&rsquo;s settings that kills an app and blocks it, including its pushes, until it&rsquo;s opened again.</dd></div>
+    <div id="g-git-hook"><dt>Git hook</dt><dd>A script git runs automatically, such as before every commit.</dd></div>
+    <div id="g-glance"><dt>Glance</dt><dd>An Android library for building widgets in Compose style.</dd></div>
+    <div id="g-play-services"><dt>Google Play Services</dt><dd>Google&rsquo;s system software on Android phones. It keeps the always-open connection pushes arrive through.</dd></div>
+    <div id="g-hex"><dt>Hex <small>hexadecimal</small></dt><dd>Numbers written with 0&ndash;9 and a&ndash;f. Each character is 4 bits.</dd></div>
+    <div id="g-hono"><dt>Hono</dt><dd>A small framework that sends each request to the code that handles it.</dd></div>
+    <div id="g-https"><dt>HTTPS <small>HyperText Transfer Protocol Secure</small></dt><dd>The encrypted way web requests travel, so nobody in between can read or change them.</dd></div>
+    <div id="g-invariant"><dt>Invariant</dt><dd>A rule that must hold every single time.</dd></div>
+    <div id="g-ip-address"><dt>IP address <small>Internet Protocol address</small></dt><dd>The number that identifies a device on the internet.</dd></div>
+    <div id="g-ipc"><dt>IPC <small>Inter-Process Communication</small></dt><dd>How two separate apps on the same phone pass messages.</dd></div>
+    <div id="g-isolate"><dt>Isolate</dt><dd>A small sealed-off space where one piece of code runs, able to start in milliseconds.</dd></div>
+    <div id="g-json"><dt>JSON <small>JavaScript Object Notation</small></dt><dd>A text format for data: <code>{"name": value}</code>.</dd></div>
+    <div id="g-jwt"><dt>JWT <small>JSON Web Token</small></dt><dd>A small signed note that proves who you are.</dd></div>
+    <div id="g-keyguard"><dt>Keyguard</dt><dd>Android&rsquo;s name for the lock screen.</dd></div>
+    <div id="g-keystore"><dt>Keystore</dt><dd>The password-protected file holding the key the app is signed with.</dd></div>
+    <div id="g-kotlin"><dt>Kotlin</dt><dd>The programming language of Android apps.</dd></div>
+    <div id="g-kv"><dt>KV <small>key&ndash;value</small></dt><dd>Cloudflare&rsquo;s simple store: save a value under a name, optionally for a limited time.</dd></div>
+    <div id="g-launcher"><dt>Launcher</dt><dd>The app that shows your home screen and draws widgets.</dd></div>
+    <div id="g-middleware"><dt>Middleware</dt><dd>Code that runs before a request&rsquo;s handler, here to work out who is calling.</dd></div>
+    <div id="g-miui"><dt>MIUI, HyperOS</dt><dd>Xiaomi&rsquo;s versions of Android; HyperOS is the newer one. Both save battery by killing background apps.</dd></div>
+    <div id="g-nat"><dt>NAT <small>Network Address Translation</small></dt><dd>How routers share one internet address between many devices. Devices behind it can connect out, but nothing can connect in.</dd></div>
+    <div id="g-node"><dt>Node.js</dt><dd>A common way to run JavaScript on servers. Workers aren&rsquo;t Node.</dd></div>
+    <div id="g-notification-channel"><dt>Notification channel</dt><dd>Since Android 8, a named group of notifications with its own sound. This app has four.</dd></div>
+    <div id="g-notification-message"><dt>Notification message</dt><dd>A push Android shows by itself, without the app choosing how. Not used here.</dd></div>
+    <div id="g-oauth"><dt>OAuth 2.0 <small>Open Authorization</small></dt><dd>The standard way one piece of software gets permission from another, using tokens instead of passwords.</dd></div>
+    <div id="g-okhttp"><dt>OkHttp</dt><dd>An Android library for making web requests.</dd></div>
+    <div id="g-private-key"><dt>Private key</dt><dd>The secret half of a key pair: whatever it signs can be checked with the public half.</dd></div>
+    <div id="g-process"><dt>Process</dt><dd>A running app, with its own memory.</dd></div>
+    <div id="g-process-death"><dt>Process death</dt><dd>Android ending an app without warning to free memory or battery.</dd></div>
+    <div id="g-race-condition"><dt>Race condition</dt><dd>A bug where the result depends on which of two things happens first.</dd></div>
+    <div id="g-registration-token"><dt>Registration token</dt><dd>A phone&rsquo;s push address from Google. It can change.</dd></div>
+    <div id="g-remoteviews"><dt>RemoteViews</dt><dd>Android&rsquo;s way of describing a small screen area for another app to draw. Every widget is one.</dd></div>
+    <div id="g-rom"><dt>ROM <small>read-only memory</small></dt><dd>Here: the phone&rsquo;s installed system software. Xiaomi makes one per region.</dd></div>
+    <div id="g-rs256"><dt>RS256</dt><dd>Signing with RSA and SHA-256.</dd></div>
+    <div id="g-rsa"><dt>RSA <small>Rivest&ndash;Shamir&ndash;Adleman</small></dt><dd>A public-key encryption system, named after its inventors. Signing with it takes a lot of computing.</dd></div>
+    <div id="g-secret"><dt>Secret</dt><dd>A value Cloudflare gives the Worker, stored encrypted and never shown again.</dd></div>
+    <div id="g-send-only"><dt>Send-only device</dt><dd>An enrolled device with no push address: it can send as its person but never receives.</dd></div>
+    <div id="g-server"><dt>Server</dt><dd>A program that waits for requests and answers them.</dd></div>
+    <div id="g-service-account"><dt>Service account</dt><dd>A Google account for software rather than a person.</dd></div>
+    <div id="g-sha-256"><dt>SHA-256 <small>Secure Hash Algorithm, 256-bit</small></dt><dd>A one-way fingerprint: the same input always gives the same result, and it can&rsquo;t be reversed.</dd></div>
+    <div id="g-sideload"><dt>Sideload</dt><dd>Install an app from an APK file instead of an app store.</dd></div>
+    <div id="g-signing"><dt>Signing</dt><dd>Stamping an APK with a key so Android can check who made it. Updates must use the same key.</dd></div>
+    <div id="g-sql"><dt>SQL <small>Structured Query Language</small></dt><dd>The language for reading and changing a database.</dd></div>
+    <div id="g-sql-injection"><dt>SQL injection</dt><dd>An attack where text sent to a server gets run as SQL.</dd></div>
+    <div id="g-sqlite"><dt>SQLite</dt><dd>A small, widely used database.</dd></div>
+    <div id="g-status-code"><dt>Status code</dt><dd>The number that opens a server&rsquo;s reply: 200 means OK, 400 a bad request, 401 not signed in, 403 not allowed, 404 not found, 409 already used, 429 too many.</dd></div>
+    <div id="g-timing-attack"><dt>Timing attack</dt><dd>Guessing a secret by measuring how long a system takes to reject each guess.</dd></div>
+    <div id="g-total-order"><dt>Total order</dt><dd>An ordering where any two items can be compared, and everyone gets the same answer.</dd></div>
+    <div id="g-typescript"><dt>TypeScript</dt><dd>JavaScript with types, checked before it runs.</dd></div>
+    <div id="g-unregistered"><dt>UNREGISTERED</dt><dd>Google&rsquo;s answer for a push address that will never work again.</dd></div>
+    <div id="g-utc"><dt>UTC <small>Coordinated Universal Time</small></dt><dd>The world&rsquo;s reference time, with no daylight saving.</dd></div>
+    <div id="g-uuid"><dt>UUID <small>Universally Unique Identifier</small></dt><dd>A random 128-bit id, such as <code>8b1f5a4e-7c2d-&hellip;</code>. Two are never the same in practice.</dd></div>
+    <div id="g-v8"><dt>V8</dt><dd>Google&rsquo;s JavaScript engine, used in Chrome and in Cloudflare Workers.</dd></div>
+    <div id="g-webcrypto"><dt>WebCrypto</dt><dd>The standard cryptography tools built into browsers and Workers.</dd></div>
+    <div id="g-widget"><dt>Widget</dt><dd>A small live tile an app puts on the home screen.</dd></div>
+    <div id="g-worker"><dt>Worker <small>Cloudflare Worker</small></dt><dd>Code Cloudflare runs on demand in its data centres. Here, the Love Button&rsquo;s server.</dd></div>
+    <div id="g-workerd"><dt>workerd</dt><dd>The program that runs Cloudflare Workers, both live and in the tests.</dd></div>
+    <div id="g-workmanager"><dt>WorkManager</dt><dd>Android&rsquo;s library for background jobs that must finish even if the app is killed.</dd></div>
+    <div id="g-wrangler"><dt>wrangler</dt><dd>Cloudflare&rsquo;s command-line tool for deploying and managing Workers.</dd></div>
+  </dl>
+</section>
+
+</main>
+
+<footer class="end">Love Button 1.0 &middot; Field manual, September 2026 &middot; source: docs/manual/field-manual.html &middot; the build story: docs/HOW-IT-WAS-BUILT.md</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var P = { border: "#D1447E", shine: "#FFD9E8", sent: "#D81B60", delivered: "#FF6FA5",
+            gold: "#FFC64B", idle: "#C98BA8", failed: "#A9A2AD" };
+  var NS = "http://www.w3.org/2000/svg";
+
+  /* The widget's own drawables, cell for cell: path data taken from the
+     VectorDrawables in app/src/main/res/drawable (via docs/images). */
+  var H_RING = "M4,2h2v2h-2zM6,2h2v2h-2zM14,2h2v2h-2zM16,2h2v2h-2zM2,4h2v2h-2zM8,4h2v2h-2zM10,4h2v2h-2zM12,4h2v2h-2zM18,4h2v2h-2zM0,6h2v2h-2zM20,6h2v2h-2zM0,8h2v2h-2zM20,8h2v2h-2zM0,10h2v2h-2zM20,10h2v2h-2zM2,12h2v2h-2zM18,12h2v2h-2zM4,14h2v2h-2zM16,14h2v2h-2zM6,16h2v2h-2zM14,16h2v2h-2zM8,18h2v2h-2zM12,18h2v2h-2zM10,20h2v2h-2z", H_FILL = "M14,4h2v2h-2zM16,4h2v2h-2zM2,6h2v2h-2zM6,6h2v2h-2zM8,6h2v2h-2zM10,6h2v2h-2zM12,6h2v2h-2zM14,6h2v2h-2zM16,6h2v2h-2zM18,6h2v2h-2zM2,8h2v2h-2zM4,8h2v2h-2zM6,8h2v2h-2zM8,8h2v2h-2zM10,8h2v2h-2zM12,8h2v2h-2zM14,8h2v2h-2zM16,8h2v2h-2zM18,8h2v2h-2zM2,10h2v2h-2zM4,10h2v2h-2zM6,10h2v2h-2zM8,10h2v2h-2zM10,10h2v2h-2zM12,10h2v2h-2zM14,10h2v2h-2zM16,10h2v2h-2zM18,10h2v2h-2zM4,12h2v2h-2zM6,12h2v2h-2zM8,12h2v2h-2zM10,12h2v2h-2zM12,12h2v2h-2zM14,12h2v2h-2zM16,12h2v2h-2zM6,14h2v2h-2zM8,14h2v2h-2zM10,14h2v2h-2zM12,14h2v2h-2zM14,14h2v2h-2zM8,16h2v2h-2zM10,16h2v2h-2zM12,16h2v2h-2zM10,18h2v2h-2z", H_HALF = "M6,6h2v2h-2zM8,6h2v2h-2zM10,6h2v2h-2zM12,6h2v2h-2zM14,6h2v2h-2zM6,8h2v2h-2zM8,8h2v2h-2zM10,8h2v2h-2zM12,8h2v2h-2zM14,8h2v2h-2zM6,10h2v2h-2zM8,10h2v2h-2zM10,10h2v2h-2zM12,10h2v2h-2zM14,10h2v2h-2zM6,12h2v2h-2zM8,12h2v2h-2zM10,12h2v2h-2zM12,12h2v2h-2zM14,12h2v2h-2zM8,14h2v2h-2zM10,14h2v2h-2zM12,14h2v2h-2z", H_SHINE = "M4,4h2v2h-2zM6,4h2v2h-2zM4,6h2v2h-2z";
+  var ICONS = {
+    "heart-idle": [[P.idle, H_RING]],
+    "heart-sending": [[P.sent, H_HALF], [P.border, H_RING]],
+    "heart-sent": [[P.sent, H_FILL], [P.border, H_RING], [P.shine, H_SHINE]],
+    "heart-delivered": [[P.delivered, H_FILL], [P.border, H_RING], [P.shine, H_SHINE]],
+    "heart-seen": [[P.delivered, H_FILL], [P.gold, H_RING], [P.shine, H_SHINE]],
+    "heart-failed": [[P.failed, H_RING]],
+    "bubble-sent": [[P.sent, "M2,2h2v2h-2zM4,2h2v2h-2zM6,2h2v2h-2zM8,2h2v2h-2zM10,2h2v2h-2zM12,2h2v2h-2zM14,2h2v2h-2zM16,2h2v2h-2zM18,2h2v2h-2zM2,4h2v2h-2zM6,4h2v2h-2zM8,4h2v2h-2zM10,4h2v2h-2zM12,4h2v2h-2zM14,4h2v2h-2zM18,4h2v2h-2zM2,6h2v2h-2zM4,6h2v2h-2zM6,6h2v2h-2zM8,6h2v2h-2zM10,6h2v2h-2zM12,6h2v2h-2zM14,6h2v2h-2zM16,6h2v2h-2zM18,6h2v2h-2zM2,8h2v2h-2zM6,8h2v2h-2zM8,8h2v2h-2zM10,8h2v2h-2zM12,8h2v2h-2zM14,8h2v2h-2zM18,8h2v2h-2zM2,10h2v2h-2zM4,10h2v2h-2zM16,10h2v2h-2zM18,10h2v2h-2zM2,12h2v2h-2zM4,12h2v2h-2zM6,12h2v2h-2zM8,12h2v2h-2zM10,12h2v2h-2zM12,12h2v2h-2zM14,12h2v2h-2zM16,12h2v2h-2zM18,12h2v2h-2zM4,14h2v2h-2zM6,14h2v2h-2zM8,14h2v2h-2zM10,14h2v2h-2zM6,16h2v2h-2z"], [P.border, "M2,0h2v2h-2zM4,0h2v2h-2zM6,0h2v2h-2zM8,0h2v2h-2zM10,0h2v2h-2zM12,0h2v2h-2zM14,0h2v2h-2zM16,0h2v2h-2zM18,0h2v2h-2zM0,2h2v2h-2zM20,2h2v2h-2zM0,4h2v2h-2zM20,4h2v2h-2zM0,6h2v2h-2zM20,6h2v2h-2zM0,8h2v2h-2zM20,8h2v2h-2zM0,10h2v2h-2zM20,10h2v2h-2zM0,12h2v2h-2zM20,12h2v2h-2zM2,14h2v2h-2zM12,14h2v2h-2zM14,14h2v2h-2zM16,14h2v2h-2zM18,14h2v2h-2zM4,16h2v2h-2zM8,16h2v2h-2zM10,16h2v2h-2zM2,18h2v2h-2zM4,18h2v2h-2zM6,18h2v2h-2zM0,20h2v2h-2zM2,20h2v2h-2z"]],
+    "paw-sent": [[P.sent, "M4,12h2v2h-2zM6,12h2v2h-2zM8,12h2v2h-2zM10,12h2v2h-2zM12,12h2v2h-2zM14,12h2v2h-2zM16,12h2v2h-2zM2,14h2v2h-2zM4,14h2v2h-2zM6,14h2v2h-2zM8,14h2v2h-2zM10,14h2v2h-2zM12,14h2v2h-2zM14,14h2v2h-2zM16,14h2v2h-2zM18,14h2v2h-2zM2,16h2v2h-2zM4,16h2v2h-2zM6,16h2v2h-2zM8,16h2v2h-2zM10,16h2v2h-2zM12,16h2v2h-2zM14,16h2v2h-2zM16,16h2v2h-2zM18,16h2v2h-2zM4,18h2v2h-2zM6,18h2v2h-2zM8,18h2v2h-2zM10,18h2v2h-2zM12,18h2v2h-2zM14,18h2v2h-2zM16,18h2v2h-2z"], [P.border, "M6,0h2v2h-2zM8,0h2v2h-2zM12,0h2v2h-2zM14,0h2v2h-2zM0,2h2v2h-2zM2,2h2v2h-2zM6,2h2v2h-2zM8,2h2v2h-2zM12,2h2v2h-2zM14,2h2v2h-2zM18,2h2v2h-2zM20,2h2v2h-2zM0,4h2v2h-2zM2,4h2v2h-2zM6,4h2v2h-2zM8,4h2v2h-2zM12,4h2v2h-2zM14,4h2v2h-2zM18,4h2v2h-2zM20,4h2v2h-2zM0,6h2v2h-2zM2,6h2v2h-2zM18,6h2v2h-2zM20,6h2v2h-2zM4,10h2v2h-2zM6,10h2v2h-2zM8,10h2v2h-2zM10,10h2v2h-2zM12,10h2v2h-2zM14,10h2v2h-2zM16,10h2v2h-2zM2,12h2v2h-2zM18,12h2v2h-2zM0,14h2v2h-2zM20,14h2v2h-2zM0,16h2v2h-2zM20,16h2v2h-2zM2,18h2v2h-2zM18,18h2v2h-2zM4,20h2v2h-2zM6,20h2v2h-2zM8,20h2v2h-2zM10,20h2v2h-2zM12,20h2v2h-2zM14,20h2v2h-2zM16,20h2v2h-2z"]],
+    "call-sent": [[P.sent, "M4,0h2v2h-2zM6,0h2v2h-2zM8,0h2v2h-2zM12,0h2v2h-2zM14,0h2v2h-2zM16,0h2v2h-2zM4,2h2v2h-2zM12,2h2v2h-2zM16,2h2v2h-2zM4,4h2v2h-2zM12,4h2v2h-2zM14,4h2v2h-2zM16,4h2v2h-2zM4,6h2v2h-2zM12,6h2v2h-2zM16,6h2v2h-2zM4,8h2v2h-2zM6,8h2v2h-2zM8,8h2v2h-2zM12,8h2v2h-2zM16,8h2v2h-2zM4,12h2v2h-2zM12,12h2v2h-2zM4,14h2v2h-2zM12,14h2v2h-2zM4,16h2v2h-2zM12,16h2v2h-2zM4,18h2v2h-2zM12,18h2v2h-2zM4,20h2v2h-2zM6,20h2v2h-2zM8,20h2v2h-2zM12,20h2v2h-2zM14,20h2v2h-2zM16,20h2v2h-2z"]]
+  };
+
+  /* The app's heart grid, from widget/PixelGrids.kt (generated by pixel_icons.py). */
+  var GRIDS = { "heart": ["................", "...XXX....XXX...", "..XssXX..XXXXX..", ".XssXXXXXXXXXXX.", "XXsXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX", ".XXXXXXXXXXXXXX.", ".XXXXXXXXXXXXXX.", "..XXXXXXXXXXXX..", "...XXXXXXXXXX...", "....XXXXXXXX....", ".....XXXXXX.....", "......XXXX......", ".......XX......."] };
+
+  function el(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function labelFrom(svg, host) {
+    var t = host.getAttribute("data-label");
+    if (t) { svg.setAttribute("role", "img"); svg.setAttribute("aria-label", t); }
+    else svg.setAttribute("aria-hidden", "true");
+  }
+  function drawIcon(host) {
+    var layers = ICONS[host.getAttribute("data-ico")];
+    if (!layers) return;
+    var svg = el("svg", { viewBox: "0 0 24 24", "shape-rendering": "crispEdges" });
+    labelFrom(svg, host);
+    var g = el("g", { transform: "translate(1 1)" });
+    layers.forEach(function (l) { g.appendChild(el("path", { fill: l[0], d: l[1] })); });
+    svg.appendChild(g);
+    host.appendChild(svg);
+  }
+
+  /* Coloured exactly as ui/PixelArt.kt cellColor(). */
+  function solid(ch) { return ch === "X" || ch === "s" || ch === "d"; }
+  function isBorderCell(g, r, c) {
+    if (r === 0 || c === 0 || r === g.length - 1 || c === g[r].length - 1) return true;
+    return g[r - 1][c] === "." || g[r + 1][c] === "." || g[r][c - 1] === "." || g[r][c + 1] === ".";
+  }
+  function cellColor(g, r, c, state) {
+    var ch = g[r][c];
+    if (!solid(ch)) return null;
+    var border = isBorderCell(g, r, c);
+    if (ch === "s") return P.shine;
+    if (state === "seen") return border ? P.gold : P.delivered;
+    return border ? P.border : P.sent;
+  }
+  function drawGrid(host) {
+    var g = GRIDS[host.getAttribute("data-grid")];
+    if (!g) return;
+    var state = host.getAttribute("data-state") || "sent";
+    var byColour = {};
+    for (var r = 0; r < g.length; r++) for (var c = 0; c < g[r].length; c++) {
+      var col = cellColor(g, r, c, state);
+      if (col) (byColour[col] = byColour[col] || []).push("M" + c + "," + r + "h1v1h-1z");
+    }
+    var svg = el("svg", { viewBox: "0 0 " + g[0].length + " " + g.length, "shape-rendering": "crispEdges" });
+    labelFrom(svg, host);
+    Object.keys(byColour).forEach(function (k) { svg.appendChild(el("path", { fill: k, d: byColour[k].join("") })); });
+    host.appendChild(svg);
+  }
+
+  /* Chapter numbers in 3 x 5 pixel digits, like the CALL icon's letters. */
+  var DIGITS = {
+    "0": ["111", "101", "101", "101", "111"], "1": ["010", "110", "010", "010", "111"],
+    "2": ["111", "001", "111", "100", "111"], "3": ["111", "001", "111", "001", "111"],
+    "4": ["101", "101", "111", "001", "001"], "5": ["111", "100", "111", "001", "111"],
+    "6": ["111", "100", "111", "101", "111"], "7": ["111", "001", "001", "010", "010"],
+    "8": ["111", "101", "111", "101", "111"], "9": ["111", "101", "111", "001", "111"],
+    "G": ["111", "100", "101", "101", "111"]
+  };
+  function drawNumeral(svg) {
+    var text = svg.getAttribute("data-n") || "";
+    var w = text.length * 4 - 1, d = "";
+    for (var i = 0; i < text.length; i++) {
+      var rows = DIGITS[text[i]];
+      if (!rows) continue;
+      for (var r = 0; r < 5; r++) for (var c = 0; c < 3; c++) {
+        if (rows[r][c] === "1") d += "M" + (i * 4 + c) + "," + r + "h1v1h-1z";
+      }
+    }
+    svg.setAttribute("viewBox", "0 0 " + w + " 5");
+    svg.setAttribute("shape-rendering", "crispEdges");
+    svg.style.aspectRatio = w + " / 5";
+    var p = el("path", { d: d });
+    p.setAttribute("style", "fill:var(--crimson)");
+    svg.appendChild(p);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ico]"), drawIcon);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-grid]"), drawGrid);
+  Array.prototype.forEach.call(document.querySelectorAll("svg.pxn[data-n]"), drawNumeral);
+
+  /* Glossary terms: tap for the meaning in place (web only). */
+  var pop = null;
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest ? e.target.closest("a.t") : null;
+    if (!a) { if (pop && !pop.contains(e.target)) closePop(); return; }
+    var id = (a.getAttribute("href") || "").slice(1);
+    var entry = id && document.getElementById(id);
+    if (!entry) return;
+    e.preventDefault();
+    closePop();
+    var dt = entry.querySelector("dt"), dd = entry.querySelector("dd");
+    pop = document.createElement("div");
+    pop.className = "gpop";
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-label", dt.textContent);
+    pop.innerHTML = '<button class="gclose" type="button" aria-label="Close">&times;</button>' +
+      '<p class="gt"></p><div class="gd"></div><a class="gx" href="#' + id + '">Open in the glossary &rarr;</a>';
+    pop.querySelector(".gt").innerHTML = dt.innerHTML;
+    pop.querySelector(".gd").innerHTML = dd.innerHTML;
+    document.body.appendChild(pop);
+    var r = a.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    var left = Math.min(Math.max(16, r.left), vw - pw - 16);
+    var top = r.bottom + 8;
+    if (top + ph > vh - 12) top = Math.max(12, r.top - ph - 8);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+    pop.querySelector(".gclose").addEventListener("click", closePop);
+    pop.querySelector(".gx").addEventListener("click", closePop);
+    pop.querySelector(".gclose").focus({ preventScroll: true });
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePop(); });
+  window.addEventListener("resize", closePop);
+  var lastY = window.scrollY;
+  window.addEventListener("scroll", function () {
+    if (pop && Math.abs(window.scrollY - lastY) > 60) closePop();
+    if (!pop) lastY = window.scrollY;
+  }, { passive: true });
+
+  /* Highlight the current chapter in the side list. */
+  var links = Array.prototype.slice.call(document.querySelectorAll(".toc-side a"));
+  var secs = links.map(function (a) { return document.querySelector(a.getAttribute("href")); }).filter(Boolean);
+  if ("IntersectionObserver" in window && secs.length) {
+    var vis = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { vis[en.target.id] = en.isIntersecting; });
+      var on = null;
+      secs.forEach(function (s) { if (!on && vis[s.id]) on = s.id; });
+      if (on) links.forEach(function (a) { a.classList.toggle("on", a.getAttribute("href") === "#" + on); });
+    }, { rootMargin: "-15% 0px -70% 0px" });
+    secs.forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
