@@ -1,0 +1,1508 @@
+<meta charset="utf-8">
+<title>Love Button Code Tour</title>
+<!--
+  Source of docs/Love Button Code Tour.pdf (A5).
+  Web: publish this file as-is. PDF: node scripts/manual-pdf.mjs code-tour.
+  This is the reading order for the codebase. What the app DOES is the field
+  manual (docs/manual/field-manual.html); how it was BUILT is HOW-IT-WAS-BUILT.md.
+-->
+<meta name="description" content="A reading order for the whole Love Button codebase: 24 sittings, every file, in the order that makes each one make sense.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Quicksand:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  color-scheme: light;
+  /* The app's Sticker Book palette (ui/Theme.kt) and the ladder's PixelPalette
+     (widget/WidgetArt.kt), the same tokens the field manual reads in. */
+  --ground:#FFF7FA;
+  --surface:#FFFFFF;
+  --wash:#FFEBF2;
+  --ink:#2E2430;
+  --ink-2:#584753;
+  --ink-3:#7A6874;
+  --rule:#F0DCE5;
+  --rule-2:#DFC6D2;
+  --crimson:#D81B60;
+  --rose:#D1447E;
+  --mint:#7FD6C2;
+  --mint-ink:#10614F;
+  --blossom:#FFB8CE;
+  --butter:#FFCF7A;
+  --code-bg:#FBF0F5;
+  --display:"Fredoka","Quicksand","Trebuchet MS",sans-serif;
+  --body:"Quicksand","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:20px}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-weight:500;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+::selection{background:var(--blossom);color:var(--ink)}
+a{color:var(--crimson);text-underline-offset:3px;text-decoration-thickness:1.5px}
+a:focus-visible,button:focus-visible{outline:2.5px solid var(--crimson);outline-offset:3px;border-radius:4px}
+strong,b{font-weight:700}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin-bottom:5px}
+li::marker{color:var(--rose)}
+
+/* ---------- shell ---------- */
+.page{max-width:1160px;margin:0 auto;padding:0 20px 100px}
+@media (min-width:1100px){.page{display:grid;grid-template-columns:210px minmax(0,1fr);column-gap:56px}}
+main{min-width:0;max-width:760px}
+main p,main li,main dd{max-width:68ch}
+
+/* ---------- cover ---------- */
+.cover{grid-column:1/-1;padding:52px 0 30px;border-bottom:2.5px solid var(--ink);display:grid;gap:26px}
+@media (min-width:780px){.cover{grid-template-columns:minmax(0,1fr) auto;align-items:center}}
+.kicker{font:500 11.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--crimson);margin:0 0 14px}
+.cover h1{font:600 clamp(38px,6.4vw,62px)/1 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.cover h1 em{font-style:normal;color:var(--crimson)}
+.dek{font-size:19px;line-height:1.5;color:var(--ink-2);max-width:54ch;margin:18px 0 0}
+.facts{display:flex;flex-wrap:wrap;gap:9px;margin:22px 0 0;padding:0;list-style:none}
+.facts li{font:500 12px/1 var(--mono);border:1.5px solid var(--ink);border-radius:999px;padding:7px 11px;background:var(--surface);box-shadow:2px 2px 0 var(--ink);margin:0}
+.hero{display:grid;justify-items:center}
+.hero .big{width:170px;height:170px}
+.hero .big svg{width:100%;height:100%;display:block}
+
+/* ---------- contents ---------- */
+.toc-side{display:none}
+@media (min-width:1100px){.toc-side{display:block;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:40px 4px 24px 0}}
+.toc-side p{font:500 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+.toc-side ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+.toc-side li{margin:0}
+.toc-side a{display:grid;grid-template-columns:22px 1fr;gap:6px;font-size:13px;line-height:1.3;color:var(--ink-2);text-decoration:none;padding:5px 8px;border-radius:8px}
+.toc-side a b{font:500 11px/1.5 var(--mono);color:var(--crimson)}
+.toc-side a:hover,.toc-side a.on{background:var(--wash);color:var(--ink)}
+.toc-side .grp{font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 4px 8px}
+
+.contents{padding-top:36px}
+.contents h2{font:600 26px/1.1 var(--display);margin:0 0 6px}
+.contents .sub{font:500 10.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--crimson);margin:16px 0 6px}
+.contents ol{list-style:none;margin:0 0 6px;padding:0;max-width:none}
+.contents li{margin:0;max-width:none}
+.contents a{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:baseline;text-decoration:none;color:var(--ink);padding:6px 0;border-bottom:1px dashed var(--rule-2);font-weight:700}
+.contents .n{font:500 12px/1.4 var(--mono);color:var(--crimson)}
+.contents .pg{font:500 12px/1.4 var(--mono);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.contents a:hover{color:var(--crimson)}
+.howto{background:var(--surface);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:14px 18px;margin:18px 3px 0 0;max-width:68ch}
+.howto p:last-child{margin:0}
+.howto dl{margin:10px 0 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:baseline}
+.howto dt{font:500 11px/1.5 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--crimson)}
+.howto dd{margin:0;font-size:15.5px;line-height:1.45}
+
+/* ---------- parts ---------- */
+.part{padding-top:56px}
+.part-head{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:16px;align-items:end;padding-bottom:12px;margin-bottom:8px;border-bottom:2.5px solid var(--ink)}
+.pxn{grid-row:1/3;height:40px;width:auto;display:block;align-self:end;margin-bottom:5px}
+.eyebrow{font:500 11px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--crimson);margin:0 0 6px}
+h2{font:600 clamp(25px,3.4vw,31px)/1.1 var(--display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+.part-note{font-size:16px;color:var(--ink-2);margin:12px 0 0;max-width:66ch}
+
+/* ---------- a step ---------- */
+.step{padding:26px 0 4px;border-bottom:1px solid var(--rule)}
+.step:last-child{border-bottom:0}
+.step-head{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;align-items:baseline}
+.step-no{font:500 12px/1.5 var(--mono);color:var(--crimson);border:1.5px solid var(--ink);border-radius:8px;padding:2px 7px;background:var(--surface);box-shadow:2px 2px 0 var(--ink);align-self:start;margin-top:4px;white-space:nowrap}
+h3{font:600 21px/1.25 var(--display);margin:0;text-wrap:balance}
+h4{font:600 16px/1.3 var(--display);margin:18px 0 6px}
+.side{display:inline-block;font:500 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;border:1.5px solid var(--ink);border-radius:999px;padding:4px 7px;margin-left:8px;vertical-align:3px}
+.side.srv{background:var(--mint)}
+.side.phn{background:var(--blossom)}
+.side.both{background:var(--butter)}
+
+/* files to open */
+.open{display:flex;flex-wrap:wrap;gap:6px 7px;align-items:center;margin:10px 0 12px;max-width:none}
+.open .lab{font:500 10px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-2);margin-right:3px}
+.f{font:500 12.5px/1.2 var(--mono);color:var(--ink);background:var(--surface);border:1.5px solid var(--rule-2);border-radius:7px;padding:5px 8px;word-break:break-all}
+.f b{color:var(--crimson);font-weight:500}
+
+/* the four voices, as in the field manual */
+.lab{display:flex;align-items:center;gap:8px;font:500 10.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-2);margin:0 0 9px}
+.lab i{width:10px;height:10px;border:1.5px solid var(--ink);flex:none;display:block}
+.plain{background:var(--wash);border-radius:14px;padding:14px 18px 2px;margin:0 0 16px;max-width:70ch}
+.plain p{font-size:17.5px;line-height:1.55}
+.plain .lab i{background:var(--blossom)}
+.why{margin:4px 0 14px}
+.why .lab i{background:var(--butter)}
+.why ul{list-style:none;padding-left:0}
+.why li{position:relative;padding-left:20px}
+.why li::before{content:"";position:absolute;left:1px;top:.58em;width:7px;height:7px;background:var(--butter);outline:1.5px solid var(--ink)}
+.check{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;background:var(--surface);border:1.5px dashed var(--rule-2);border-radius:12px;padding:10px 14px;margin:6px 3px 16px 0;max-width:68ch;font-size:15.5px;line-height:1.5}
+.check .t{font:500 10px/1.5 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mint-ink)}
+.check p{margin:0}
+
+/* the walk: an ordered read with line references */
+ol.walk{list-style:none;margin:0 0 16px;padding:0;max-width:none;counter-reset:w}
+ol.walk>li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);margin:0;max-width:none}
+ol.walk>li:last-child{border-bottom:0}
+ol.walk>li::before{counter-increment:w;content:counter(w);font:500 11px/1.9 var(--mono);color:var(--ink-3)}
+ol.walk .tx{max-width:none}
+ol.walk code{white-space:nowrap}
+
+/* code, tables, notes */
+code{font-family:var(--mono);font-size:.84em;background:var(--code-bg);padding:1px 5px;border-radius:5px;color:var(--ink);overflow-wrap:anywhere}
+pre{font:400 13px/1.6 var(--mono);background:var(--code-bg);border:1px solid var(--rule);border-radius:12px;padding:13px 15px;overflow-x:auto;margin:0 0 16px;color:var(--ink);max-width:100%}
+pre code{background:none;padding:0;font-size:inherit;overflow-wrap:normal;white-space:pre}
+.cm{color:var(--ink-3)}
+.tw{overflow-x:auto;margin:0 0 18px}
+table{border-collapse:collapse;width:100%;font-size:15px;line-height:1.45}
+th{text-align:left;font:500 10.5px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);padding:0 12px 7px 0;border-bottom:2px solid var(--ink);vertical-align:bottom}
+td{padding:7px 12px 7px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.m,.m{font-family:var(--mono);font-size:13px}
+td.nw{white-space:nowrap}
+.note{background:var(--surface);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:12px 16px;margin:4px 3px 16px 0;max-width:68ch}
+.note .tag{display:block;font:500 10.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;margin-bottom:7px;color:var(--crimson)}
+.note p:last-child{margin-bottom:0}
+a.t{color:inherit;text-decoration:underline dotted var(--rose);text-decoration-thickness:1.6px;text-underline-offset:3.5px}
+a.t:hover{color:var(--crimson)}
+
+/* diagram */
+figure{margin:0}
+figure.dia{margin:6px 0 20px}
+figure.dia .sv{overflow-x:auto}
+figure.dia svg{display:block;width:100%;height:auto;max-width:640px;color:var(--ink)}
+figure.dia svg.min{min-width:540px}
+figure.dia figcaption{font-size:14.5px;line-height:1.5;color:var(--ink-2);margin-top:8px;max-width:66ch}
+.d-bx{stroke:currentColor;stroke-width:2}
+.d-sh{fill:currentColor;stroke:none}
+.d-a{fill:var(--blossom)}
+.d-w{fill:var(--mint)}
+.d-g{fill:var(--butter)}
+.d-s{fill:var(--surface)}
+.d-t{fill:currentColor;font-family:var(--mono);font-weight:500;font-size:11.5px}
+.d-l{fill:currentColor;font-family:var(--mono);font-size:10.5px}
+.d-q{fill:var(--ink-2);font-family:var(--body);font-size:11.5px}
+.d-ln{stroke:currentColor;stroke-width:1.75;fill:none}
+.d-hot{stroke:var(--crimson);stroke-width:2.25;fill:none}
+.d-ht{fill:var(--crimson)}
+.d-ds{stroke-dasharray:6 4}
+.d-mk{fill:currentColor}
+.d-mkc{fill:var(--crimson)}
+
+/* glossary */
+dl.gloss{margin:0}
+dl.gloss>div{padding:8px 10px 8px 0;border-bottom:1px solid var(--rule);scroll-margin-top:24px;max-width:70ch}
+dl.gloss>div:target{background:var(--wash);border-radius:10px;padding-left:10px}
+dl.gloss dt{font:600 16px/1.3 var(--display);display:inline}
+dl.gloss dt small{font:500 11px/1 var(--mono);color:var(--ink-3);margin-left:6px}
+dl.gloss dd{margin:2px 0 0}
+
+.gpop{position:fixed;z-index:50;width:min(340px,calc(100vw - 32px));background:var(--surface);color:var(--ink);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:12px 38px 12px 14px;font-size:15px;line-height:1.5}
+.gpop .gt{font:600 17px/1.25 var(--display);margin:0 0 5px}
+.gpop .gt small{font:500 11px var(--mono);color:var(--ink-3);margin-left:6px}
+.gpop .gd{margin:0 0 8px}
+.gpop .gx{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.gpop .gclose{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;border-radius:8px;background:none;font:600 20px/1 var(--display);color:var(--ink-2);cursor:pointer}
+.gpop .gclose:hover{background:var(--wash)}
+
+.end{grid-column:1/-1;margin-top:36px;padding-top:20px;border-top:2.5px solid var(--ink);font:500 11.5px/1.6 var(--mono);color:var(--ink-3)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* ================= print: A5, for the PDF ================= */
+@media print{
+  @page{size:A5;margin:12mm 11mm 14mm;
+    @bottom-center{content:counter(page);font-family:"IBM Plex Mono",monospace;font-size:7pt;color:#7A6874}}
+  @page :first{@bottom-center{content:none}}
+  :root{--ground:#FFFFFF}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-size:9.4pt;line-height:1.45}
+  .page{display:block;max-width:none;padding:0}
+  .toc-side,.gpop,.end{display:none!important}
+  main{max-width:none}
+  main p,main li,main dd,.plain,.note,.howto,.check,dl.gloss>div,.dek{max-width:none}
+
+  .cover{height:178mm;padding:0;border:0;display:flex;flex-direction:column;justify-content:center;gap:10mm;break-after:page}
+  .cover h1{font-size:29pt}
+  .kicker{font-size:6.8pt;margin-bottom:9pt}
+  .dek{font-size:10.2pt;margin-top:10pt}
+  .facts{gap:5pt;margin-top:12pt}
+  .facts li{font-size:6.8pt;padding:3.5pt 6pt;box-shadow:1.5px 1.5px 0 var(--ink)}
+  .hero .big{width:42mm;height:42mm}
+
+  .contents{padding-top:0;break-after:page}
+  .contents h2{font-size:17pt}
+  .contents .sub{font-size:6.6pt;margin:9pt 0 3pt}
+  .contents a{padding:2.6pt 0;grid-template-columns:17pt minmax(0,1fr) auto;gap:6pt;font-size:8.8pt}
+  .contents .n,.contents .pg{font-size:7.2pt}
+  .howto{padding:8pt 10pt;border-width:1.3pt;box-shadow:2px 2px 0 var(--ink);border-radius:9pt;font-size:8.6pt;margin-top:10pt}
+  .howto dd{font-size:8.4pt}
+  .howto dt{font-size:6.6pt}
+
+  .part{padding-top:12pt;break-before:page}
+  .part-head{padding-bottom:7pt;margin-bottom:5pt;column-gap:9pt}
+  .pxn{height:22pt;margin-bottom:3pt}
+  .eyebrow{font-size:6.6pt}
+  h2{font-size:16pt}
+  .part-note{font-size:9pt;margin-top:7pt}
+  .step{padding:11pt 0 2pt}
+  .step-head{column-gap:8pt}
+  .step-no{font-size:6.8pt;padding:1pt 4pt;border-width:1pt;box-shadow:1.5px 1.5px 0 var(--ink);border-radius:5pt}
+  h3{font-size:12.4pt}
+  h4{font-size:9.8pt;margin:10pt 0 3pt}
+  .side{font-size:5.6pt;padding:2pt 4pt;border-width:1pt;margin-left:5pt;vertical-align:2pt}
+  .open{margin:6pt 0 7pt;gap:3.5pt 4pt}
+  .open .lab{font-size:6pt}
+  .f{font-size:6.9pt;padding:2.2pt 4pt;border-width:1pt;border-radius:4pt}
+  .lab{font-size:6.3pt;margin-bottom:5pt;gap:5pt}
+  .lab i{width:6.5pt;height:6.5pt;border-width:1pt}
+  .plain{padding:7pt 9pt 1pt;border-radius:9pt;margin-bottom:8pt}
+  .plain p{font-size:9.8pt;line-height:1.42}
+  .why{margin:2pt 0 7pt}
+  .why li{padding-left:12pt}
+  .why li::before{width:4.5pt;height:4.5pt;outline-width:1pt}
+  .check{padding:6pt 8pt;border-radius:8pt;font-size:8.6pt;margin-bottom:8pt;gap:6pt}
+  .check .t{font-size:6pt}
+  ol.walk>li{grid-template-columns:13pt minmax(0,1fr);gap:6pt;padding:3.6pt 0}
+  ol.walk>li::before{font-size:6.8pt}
+  p{margin-bottom:5pt}
+  ul,ol{margin-bottom:7pt;padding-left:13pt}
+  li{margin-bottom:2.2pt}
+  pre{font-size:7pt;line-height:1.42;padding:6pt 8pt;border-radius:7pt;white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible;margin-bottom:8pt}
+  code{font-size:.82em}
+  .tw{overflow:visible;margin-bottom:9pt}
+  table{font-size:7.9pt;line-height:1.36}
+  th{font-size:6pt;padding:0 7pt 4pt 0}
+  td{padding:3.6pt 7pt 3.6pt 0}
+  td.m,.m{font-size:7pt}
+  .note{padding:6pt 8pt;border-width:1.3pt;box-shadow:2px 2px 0 var(--ink);border-radius:9pt;margin-bottom:9pt}
+  .note .tag{font-size:6.3pt;margin-bottom:4pt}
+  figure.dia{margin:3pt 0 9pt}
+  figure.dia svg,figure.dia svg.min{max-width:100%;min-width:0}
+  figure.dia figcaption{font-size:8pt;margin-top:4pt}
+  dl.gloss>div{padding:3pt 0}
+  dl.gloss dt{font-size:9.2pt}
+  dl.gloss dt small{font-size:6.4pt}
+  dl.gloss dd{font-size:8.4pt;margin-top:1pt}
+  a{color:inherit;text-decoration:none}
+  a.t{text-decoration:underline dotted var(--rose);text-decoration-thickness:1pt;text-underline-offset:2pt}
+  figure,pre,.note,.check,tr,ol.walk>li,dl.gloss>div,.plain{break-inside:avoid}
+  h2,h3,h4,.lab,.part-head,.step-head,.open{break-after:avoid}
+}
+</style>
+
+<div class="page">
+
+<header class="cover">
+  <div>
+    <p class="kicker">Code tour &middot; Love Button 1.0 &middot; September 2026</p>
+    <h1>Reading the <em>Love Button</em></h1>
+    <p class="dek">Twenty-four sittings through the whole codebase: which file to open, what to look for inside it, and why it is written that way. Plain words first, then the technical detail.</p>
+    <ul class="facts">
+      <li>24 steps</li>
+      <li>2 languages</li>
+      <li>~6,000 lines</li>
+      <li>no prior Android needed</li>
+    </ul>
+  </div>
+  <div class="hero"><span class="big" data-grid="heart" data-state="sent" data-label="The app's pixel heart, filled"></span></div>
+</header>
+
+<nav class="toc-side" aria-label="Parts">
+  <p>The tour</p>
+  <ol>
+    <li class="grp">Part 0</li>
+    <li><a href="#s1"><b>1</b><span>The map</span></a></li>
+    <li class="grp">Part 1 &middot; server</li>
+    <li><a href="#s2"><b>2</b><span>The front door</span></a></li>
+    <li><a href="#s3"><b>3</b><span>What it is handed</span></a></li>
+    <li><a href="#s4"><b>4</b><span>The two tables</span></a></li>
+    <li><a href="#s5"><b>5</b><span>Who is calling</span></a></li>
+    <li><a href="#s6"><b>6</b><span>Enrolling a phone</span></a></li>
+    <li><a href="#s7"><b>7</b><span>The send</span></a></li>
+    <li><a href="#s8"><b>8</b><span>Proving it to Google</span></a></li>
+    <li><a href="#s9"><b>9</b><span>The receipts</span></a></li>
+    <li><a href="#s10"><b>10</b><span>Ceilings and the sweep</span></a></li>
+    <li><a href="#s11"><b>11</b><span>The server's tests</span></a></li>
+    <li class="grp">Part 2 &middot; sending</li>
+    <li><a href="#s12"><b>12</b><span>How the app is wired</span></a></li>
+    <li><a href="#s13"><b>13</b><span>What the phone remembers</span></a></li>
+    <li><a href="#s14"><b>14</b><span>The client</span></a></li>
+    <li><a href="#s15"><b>15</b><span>One tap</span></a></li>
+    <li><a href="#s16"><b>16</b><span>The ladder</span></a></li>
+    <li><a href="#s17"><b>17</b><span>The twenty seconds</span></a></li>
+    <li class="grp">Part 3 &middot; receiving</li>
+    <li><a href="#s18"><b>18</b><span>The push lands</span></a></li>
+    <li><a href="#s19"><b>19</b><span>Seen, and who saw</span></a></li>
+    <li><a href="#s20"><b>20</b><span>The shared bubble</span></a></li>
+    <li class="grp">Part 4 &middot; the face</li>
+    <li><a href="#s21"><b>21</b><span>The home screen</span></a></li>
+    <li><a href="#s22"><b>22</b><span>The pixel art</span></a></li>
+    <li><a href="#s23"><b>23</b><span>The other screens</span></a></li>
+    <li class="grp">Part 5 &middot; proof</li>
+    <li><a href="#s24"><b>24</b><span>Tests, and one tap traced</span></a></li>
+    <li class="grp">Back</li>
+    <li><a href="#gloss"><b>G</b><span>Glossary</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section class="contents" aria-labelledby="contents-h">
+  <h2 id="contents-h">The tour</h2>
+
+  <p class="sub">Part 0 &middot; Before you open anything</p>
+  <ol>
+    <li><a href="#s1"><span class="n">1</span><span>The map: what is where, and why there are two halves</span><span class="pg" data-for="p0"></span></a></li>
+  </ol>
+
+  <p class="sub">Part 1 &middot; The server, front to back</p>
+  <ol>
+    <li><a href="#s2"><span class="n">2</span><span>The front door: every request starts here</span><span class="pg" data-for="s2"></span></a></li>
+    <li><a href="#s3"><span class="n">3</span><span>What the code is handed at runtime</span><span class="pg" data-for="s3"></span></a></li>
+    <li><a href="#s4"><span class="n">4</span><span>The two tables, in twenty lines of SQL</span><span class="pg" data-for="s4"></span></a></li>
+    <li><a href="#s5"><span class="n">5</span><span>Who is calling: one hash, one row</span><span class="pg" data-for="s5"></span></a></li>
+    <li><a href="#s6"><span class="n">6</span><span>Enrolling a phone</span><span class="pg" data-for="s6"></span></a></li>
+    <li><a href="#s7"><span class="n">7</span><span>The send, line by line</span><span class="pg" data-for="s7"></span></a></li>
+    <li><a href="#s8"><span class="n">8</span><span>Proving it to Google, and the push itself</span><span class="pg" data-for="s8"></span></a></li>
+    <li><a href="#s9"><span class="n">9</span><span>The receipts, and why they cannot go backwards</span><span class="pg" data-for="s9"></span></a></li>
+    <li><a href="#s10"><span class="n">10</span><span>Ceilings, and the nightly sweep</span><span class="pg" data-for="s10"></span></a></li>
+    <li><a href="#s11"><span class="n">11</span><span>The server's tests, and how to run them</span><span class="pg" data-for="s11"></span></a></li>
+  </ol>
+
+  <p class="sub">Part 2 &middot; The phone: what a tap does</p>
+  <ol>
+    <li><a href="#s12"><span class="n">12</span><span>How the app is wired together</span><span class="pg" data-for="s12"></span></a></li>
+    <li><a href="#s13"><span class="n">13</span><span>What the phone remembers</span><span class="pg" data-for="s13"></span></a></li>
+    <li><a href="#s14"><span class="n">14</span><span>The client: five calls, no framework</span><span class="pg" data-for="s14"></span></a></li>
+    <li><a href="#s15"><span class="n">15</span><span>One tap, from finger to request</span><span class="pg" data-for="s15"></span></a></li>
+    <li><a href="#s16"><span class="n">16</span><span>The ladder, and the races it survives</span><span class="pg" data-for="s16"></span></a></li>
+    <li><a href="#s17"><span class="n">17</span><span>The twenty seconds</span><span class="pg" data-for="s17"></span></a></li>
+  </ol>
+
+  <p class="sub">Part 3 &middot; The phone: what arrives</p>
+  <ol>
+    <li><a href="#s18"><span class="n">18</span><span>The push lands, and the sound plays</span><span class="pg" data-for="s18"></span></a></li>
+    <li><a href="#s19"><span class="n">19</span><span>Seen: deciding whether anyone is looking</span><span class="pg" data-for="s19"></span></a></li>
+    <li><a href="#s20"><span class="n">20</span><span>The shared bubble, and the clock both phones trust</span><span class="pg" data-for="s20"></span></a></li>
+  </ol>
+
+  <p class="sub">Part 4 &middot; What you actually see</p>
+  <ol>
+    <li><a href="#s21"><span class="n">21</span><span>The home screen, budgeted to the pixel</span><span class="pg" data-for="s21"></span></a></li>
+    <li><a href="#s22"><span class="n">22</span><span>The pixel art, from ASCII to animation</span><span class="pg" data-for="s22"></span></a></li>
+    <li><a href="#s23"><span class="n">23</span><span>Enrol, setup and the guide</span><span class="pg" data-for="s23"></span></a></li>
+  </ol>
+
+  <p class="sub">Part 5 &middot; Proving it works</p>
+  <ol>
+    <li><a href="#s24"><span class="n">24</span><span>The app's tests, and one tap traced through every file</span><span class="pg" data-for="s24"></span></a></li>
+    <li><a href="#gloss"><span class="n">G</span><span>Glossary</span><span class="pg" data-for="gloss"></span></a></li>
+  </ol>
+
+  <div class="howto">
+    <p><strong>How to use it.</strong> Each step is one sitting: open the files in the <em>Open</em> row, read the step, then read the file top to bottom. The steps are in dependency order &mdash; nothing asks you to already know something a later step explains &mdash; so going straight through is the fastest route, and a step you already know is safe to skip.</p>
+    <dl>
+      <dt>Open</dt><dd>The files for this sitting. <code>send.ts<b>:46</b></code> means line&nbsp;46 of that file.</dd>
+      <dt>In plain words</dt><dd>What the file is for, with nothing technical in it.</dd>
+      <dt>Read it in this order</dt><dd>The numbered walk through the file. This is the step.</dd>
+      <dt>Why</dt><dd>The reason it is written that way rather than the obvious way.</dd>
+      <dt>Got it when</dt><dd>One question. If you can answer it, move on.</dd>
+    </dl>
+    <p>Underlined words are in the glossary at the back; on the web, tap one to read it in place. Paths are from the repository root. Code excerpts are real and trimmed; notes after <span class="m">&larr;</span> were added here.</p>
+  </div>
+</section>
+
+<!-- ===================== PART 0 ===================== -->
+<section class="part ch" id="p0">
+  <header class="part-head">
+    <svg class="pxn" data-n="0" role="img" aria-label="Part 0"></svg>
+    <p class="eyebrow">Part 0</p>
+    <h2>Before you open anything</h2>
+  </header>
+  <p class="part-note">One sitting to learn the shape of the repository, so that every later step knows where it is.</p>
+
+  <article class="step" id="s1">
+    <div class="step-head">
+      <span class="step-no">Step 1</span>
+      <h3>The map: what is where, and why there are two halves<span class="side both">both</span></h3>
+    </div>
+
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">README.md</span>
+      <span class="f">love-button-spec.md</span>
+      <span class="f">server/wrangler.toml</span>
+      <span class="f">app/build.gradle.kts<b>:1&ndash;40</b></span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Two programs live in this repository. One runs on the two phones; one runs on Cloudflare&rsquo;s machines. They never share code &mdash; they share a small agreement about what a request looks like. Everything else in the repository is words about those two programs.</p>
+    </div>
+
+    <h4>The tree, with the reason for each branch</h4>
+<pre><code>app/        the Android app        Kotlin, ~3,000 lines in 38 files
+  src/main/java/com/lovebutton/app/
+    data/     storage and the network client
+    work/     background jobs
+    push/     receiving from Google
+    widget/   the four home-screen tiles
+    ui/       the screens you open
+  src/main/res/    pictures, sounds, fonts, widget metadata
+  src/test/        17 test files
+server/     the Cloudflare Worker   TypeScript, 960 lines in 14 files
+  src/routes/      one file per endpoint
+  migrations/      the database schema, as .sql
+  test/            11 test files, 79 tests
+docs/       the field manual, this tour, setup and secrets
+scripts/    the pixel-icon generator, the PDF build, backups</code></pre>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>README.md</code> &mdash; the front door. What the product is, in a screen&rsquo;s worth.</div></li>
+      <li><div class="tx"><code>love-button-spec.md</code> &mdash; the binding document, and the longest thing here. Read the architecture section and the numbered <em>invariants</em>; the rest is best read after the code rather than before it. An invariant is a promise the code keeps no matter what arrives: <em>identity comes only from the token</em>, <em>the recipient is derived, never sent</em>, <em>only the recipient may acknowledge</em>. You will meet all three in Part&nbsp;1.</div></li>
+      <li><div class="tx"><code>server/wrangler.toml</code> &mdash; 26 lines that say what the server is. <code>main</code> names the entry file, <code>[vars]</code> holds public settings, the two <code>[[&hellip;]]</code> blocks attach the database and the cache, and <code>[triggers]</code> is the nightly cleanup. No password appears, which is the point of step&nbsp;3.</div></li>
+      <li><div class="tx"><code>app/build.gradle.kts</code> lines 1&ndash;40 &mdash; how the app is built. <a class="t" href="#g-gradle">Gradle</a> is the app&rsquo;s build tool; this file reads the Worker&rsquo;s address out of <code>local.properties</code> (untracked, so a public repository does not carry it) and fails the build loudly when it is missing. Further down, <code>versionCode</code> and the release signing block &mdash; the comments there are worth the minute.</div></li>
+    </ol>
+
+    <div class="why">
+      <p class="lab"><i></i>Why it is built this way</p>
+      <ul>
+        <li><strong>A repository is a set of decisions.</strong> The spec records what was <em>not</em> built and why, which is the part a reader cannot reconstruct from the code. The code records the rest.</li>
+        <li><strong>Nothing secret is in here.</strong> The Google key, the two enrolment codes, the signing keystore and the Worker&rsquo;s address all live outside git. <code>docs/SECRETS.md</code> says where each one is.</li>
+      </ul>
+    </div>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say which half holds the private key that can push to any phone (the server), and which half holds the words &ldquo;Miss you&rdquo; (the app). If those were the other way round, the design would be broken &mdash; step&nbsp;13 says why.</p></div>
+  </article>
+</section>
+
+<!-- ===================== PART 1 ===================== -->
+<section class="part ch" id="p1">
+  <header class="part-head">
+    <svg class="pxn" data-n="1" role="img" aria-label="Part 1"></svg>
+    <p class="eyebrow">Part 1 &middot; the server</p>
+    <h2>The Worker, front to back</h2>
+  </header>
+  <p class="part-note">Ten sittings, 960 lines, and no Android knowledge needed. Read this half first: it is smaller, it is one language, and it defines the agreement the app has to keep.</p>
+
+  <article class="step" id="s2">
+    <div class="step-head">
+      <span class="step-no">Step 2</span>
+      <h3>The front door: every request starts here<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/index.ts</span><span class="f">all 54 lines</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>When a phone asks the server for something, this file decides which piece of code answers. It also holds the one job that runs on a timer rather than because somebody asked.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>:1&ndash;8</code> the imports. Each <code>routes/&hellip;</code> import is one endpoint, and there are only four of them. That is the whole <a class="t" href="#g-api">API</a>.</div></li>
+      <li><div class="tx"><code>:10</code> <code>new Hono&lt;App&gt;()</code>. <a class="t" href="#g-hono">Hono</a> is a small <a class="t" href="#g-framework">framework</a> whose entire job is <em>routing</em>: matching a <a class="t" href="#g-http-method">method</a> and a path &mdash; <code>POST /v1/send</code> &mdash; to the function that handles it. <code>&lt;App&gt;</code> is a <a class="t" href="#g-type">type</a> parameter that tells TypeScript what this app is carrying; step&nbsp;3 defines it.</div></li>
+      <li><div class="tx"><code>:17</code> <code>/health</code>. The simplest handler in the codebase: <code>c</code> is the <em>context</em> (this request and its reply), and <code>c.json({ok:true})</code> answers with <a class="t" href="#g-json">JSON</a>. Curl it and the deployment is proved alive.</div></li>
+      <li><div class="tx"><code>:19&ndash;22</code> four <code>app.route("/v1", &hellip;)</code> lines, which mount each routes file under <code>/v1</code>. Versioning the path from day one costs nothing and leaves room for a <code>/v2</code> that never has to come.</div></li>
+      <li><div class="tx"><code>:27&ndash;32</code> <code>notFound</code> and <code>onError</code>. Without them Hono answers a mistyped path with plain text, and the app&rsquo;s parser &mdash; which expects JSON, always &mdash; would fail on the reply rather than on the error. <code>onError</code> also logs the real exception and returns a message that says nothing about it.</div></li>
+      <li><div class="tx"><code>:41&ndash;53</code> the <a class="t" href="#g-export-default">default export</a>. Not the Hono app itself but an object with two keys, because a Worker can only expose a <code>scheduled</code> handler from an object: <code>fetch</code> is &ldquo;a request arrived&rdquo;, <code>scheduled</code> is &ldquo;the clock said 03:17&rdquo;. Note the comment on <code>await</code>: the purge is awaited so a failure shows up as a failed run rather than vanishing.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can name the six endpoints without scrolling: <code>/health</code>, and under <code>/v1</code>: <code>enroll</code>, <code>devices</code> (post and delete), <code>send</code>, <code>receipts</code>.</p></div>
+  </article>
+
+  <article class="step" id="s3">
+    <div class="step-head">
+      <span class="step-no">Step 3</span>
+      <h3>What the code is handed at runtime<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/env.ts</span><span class="f">server/src/http.ts</span><span class="f">server/wrangler.toml</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>The server never opens a database connection or reads a password. Cloudflare hands it a database object and a cache object already opened, plus a handful of settings, and that bundle is called the environment.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>env.ts:9</code> <code>interface Env</code>. An <a class="t" href="#g-interface">interface</a> is a description of a shape, checked while the code is compiled and gone by the time it runs. <code>DB</code> is the <a class="t" href="#g-d1">D1</a> database, <code>TOKEN_CACHE</code> the <a class="t" href="#g-kv">KV</a> cache: these are <a class="t" href="#g-binding">bindings</a>, objects Cloudflare injects. There is no host, no port and no password anywhere in this repository because of them.</div></li>
+      <li><div class="tx"><code>env.ts:13&ndash;21</code> the difference that matters: <code>[vars]</code> in <code>wrangler.toml</code> are public and committed &mdash; the Firebase project id, the two names. The three below are <a class="t" href="#g-secret">secrets</a>, uploaded once with <code>wrangler secret put</code>, stored encrypted, never readable again.</div></li>
+      <li><div class="tx"><code>env.ts:25&ndash;37</code> <code>DeviceRow</code> is the shape of one row of the phones table, and <code>Vars</code> says the request carries one of those attached to it. <code>App</code> bundles both, and is the <code>&lt;App&gt;</code> you saw in step&nbsp;2 &mdash; so <code>c.get("device")</code> is type-checked everywhere it appears.</div></li>
+      <li><div class="tx"><code>http.ts:12</code> <code>fail()</code>. Every error the API returns has one shape: <code>{"error":"rate_limited","message":"&hellip;"}</code>. The app has exactly one error parser as a result (step&nbsp;14).</div></li>
+      <li><div class="tx"><code>http.ts:22</code> <code>nowSeconds()</code>. Every timestamp in this system is <a class="t" href="#g-epoch">epoch seconds</a>. JavaScript counts milliseconds, so the division lives here once instead of in five call sites. The app, which thinks in milliseconds, multiplies at the boundary &mdash; watch for <code>* 1000L</code> in Part&nbsp;3.</div></li>
+      <li><div class="tx"><code>http.ts:30</code> <code>readJson()</code>. Returns <code>null</code> instead of throwing when the body is missing, malformed, or not declared as JSON. Callers turn <code>null</code> into a 400, so a broken body can never reach the database layer.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can explain why <code>ENROLL_CODE_1</code> appears in <code>env.ts</code> but not in <code>wrangler.toml</code>.</p></div>
+  </article>
+
+  <article class="step" id="s4">
+    <div class="step-head">
+      <span class="step-no">Step 4</span>
+      <h3>The two tables, in twenty lines of SQL<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/migrations/0001_init.sql</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Everything the server stores is two tables: one row per phone, one row per message sent. There is no table of users and no table of conversations, because there are exactly two people and no history.</p>
+    </div>
+
+<pre><code>CREATE TABLE devices (
+  id         TEXT PRIMARY KEY,                        <span class="cm">&larr; a UUID</span>
+  person     INTEGER NOT NULL CHECK (person IN (1,2)),<span class="cm">&larr; a third person is impossible</span>
+  auth_hash  TEXT NOT NULL UNIQUE,                    <span class="cm">&larr; SHA-256 of the bearer token</span>
+  fcm_token  TEXT,                                    <span class="cm">&larr; push address; NULL = send-only</span>
+  label      TEXT,
+  created_at INTEGER NOT NULL,                        <span class="cm">&larr; epoch seconds</span>
+  updated_at INTEGER NOT NULL
+);</code></pre>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx">The header comment. It names the two tables that do <em>not</em> exist, which is the more interesting half.</div></li>
+      <li><div class="tx"><code>CHECK (person IN (1,2))</code>. A <a class="t" href="#g-check-constraint">CHECK constraint</a> is a rule the database enforces on every write. &ldquo;Only two people&rdquo; is therefore not a convention anyone has to remember &mdash; a third is rejected by <a class="t" href="#g-sqlite">SQLite</a> itself. Step&nbsp;7 leans on this: it does arithmetic on <code>person</code> and needs it to be 1 or 2.</div></li>
+      <li><div class="tx"><code>auth_hash &hellip; UNIQUE</code>. The token itself is never stored &mdash; only its <a class="t" href="#g-sha-256">SHA-256</a>. A stolen copy of this database yields nothing you can log in with.</div></li>
+      <li><div class="tx"><code>fcm_token TEXT</code>, with no <code>NOT NULL</code>. That nullable column is a whole feature: a row with no push address is a <em>send-only</em> device (step&nbsp;6), and it disappears from every fan-out query by itself, because <code>WHERE fcm_token IS NOT NULL</code> does not match it.</div></li>
+      <li><div class="tx">The <code>sends</code> table. <code>id</code> is the <code>send_id</code> the phone minted &mdash; the phone chooses the <a class="t" href="#g-primary-key">primary key</a>, which step&nbsp;15 explains and step&nbsp;7 validates. <code>delivered_at</code> and <code>seen_at</code> start empty and are filled by receipts.</div></li>
+      <li><div class="tx">The two <code>CREATE INDEX</code> lines. An <a class="t" href="#g-index">index</a> is a lookup shortcut; <code>idx_sends_from_time</code> exists for exactly one query, the hourly count in step&nbsp;10.</div></li>
+    </ol>
+
+    <div class="why">
+      <p class="lab"><i></i>Why it is built this way</p>
+      <ul>
+        <li><strong>Numbered migration files.</strong> The schema is a list of <code>.sql</code> files applied in order, so a fresh database and a live one reach the same state &mdash; and the tests apply these same files to a throwaway database (step&nbsp;11).</li>
+      </ul>
+    </div>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what happens if the app sends <code>person: 3</code>. (Trick question: it cannot. No request carries a person at all &mdash; step&nbsp;7.)</p></div>
+  </article>
+
+  <article class="step" id="s5">
+    <div class="step-head">
+      <span class="step-no">Step 5</span>
+      <h3>Who is calling: one hash, one row<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/auth.ts</span><span class="f">server/src/crypto.ts</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Every request except two carries a long random string that only one phone has. The server hashes it, finds the matching phone, and from then on <em>that</em> is who is calling. Nothing in the request body can change the answer.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>auth.ts:15</code> <code>requireDevice</code> is <a class="t" href="#g-middleware">middleware</a>: a function that runs before the handler and can either stop the request or hand it on with <code>await next()</code>. Mounted per-route with <code>.use()</code>, which you saw at the top of each routes file.</div></li>
+      <li><div class="tx"><code>auth.ts:16&ndash;22</code> the header. <code>Authorization: Bearer &lt;token&gt;</code> is the standard shape; anything else is a 401 before any work happens.</div></li>
+      <li><div class="tx"><code>auth.ts:26&ndash;32</code> hash, then look up. Note <code>.bind(authHash)</code>: the value goes to the database <em>separately</em> from the query text, in place of the <code>?</code>. That is a <a class="t" href="#g-prepared-statement">prepared statement</a>, and it is why <a class="t" href="#g-sql-injection">SQL injection</a> is impossible here &mdash; the value is never parsed as SQL. Every query in this codebase is written this way.</div></li>
+      <li><div class="tx"><code>auth.ts:46</code> <code>c.set("device", device)</code>. From here on, <code>c.get("device")</code> is the only source of identity. Grep the routes for <code>from_person</code> and confirm it is never read from a body.</div></li>
+      <li><div class="tx"><code>crypto.ts:17</code> <code>randomToken()</code>. 32 random bytes from <code>crypto.getRandomValues</code>, hex-encoded to 64 characters. The comment earns its place: <code>Math.random()</code> is predictable and must never mint a credential.</div></li>
+      <li><div class="tx"><code>crypto.ts:44</code> <code>secureEquals()</code>. Comparing two strings with <code>===</code> stops at the first differing byte, so the time it takes leaks how much of a guess was right &mdash; a <a class="t" href="#g-timing-attack">timing attack</a>. Hashing both sides first gives two 32-byte values, and the loop then always runs 32 times whatever the inputs. Used on the enrolment codes in step&nbsp;6.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can answer: the database leaks. What can the attacker do with <code>auth_hash</code>? (Nothing: they would need the string that hashes to it.)</p></div>
+  </article>
+
+  <article class="step" id="s6">
+    <div class="step-head">
+      <span class="step-no">Step 6</span>
+      <h3>Enrolling a phone<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/routes/enroll.ts</span><span class="f">server/src/limits.ts<b>:34</b></span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Each phone is set up once. It presents a long code typed in by hand, and gets back a token of its own, which person it is, and the other person&rsquo;s name. The code says which of the two people you are &mdash; there are only two codes.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>:36&ndash;42</code> the rate limit. This is the only endpoint reachable without a token, so it is capped at five attempts an hour per <a class="t" href="#g-ip-address">IP address</a>, counted in KV, with a <code>Retry-After</code> header saying when to come back.</div></li>
+      <li><div class="tx"><code>:19</code> <code>personForCode()</code>. Both comparisons are started before either is awaited (<code>Promise.all</code>), so the reply takes the same time whichever code was presented &mdash; no early return to measure. Step&nbsp;5&rsquo;s <code>secureEquals</code> does the comparing.</div></li>
+      <li><div class="tx"><code>:62&ndash;66</code> the send-only case. A body with no <code>fcm_token</code> is allowed and produces a row with <code>NULL</code> there: a device that can send but can never receive. The comment explains what it is for &mdash; the overnight check needs a token of its own without a debuggable build shipping to a real phone.</div></li>
+      <li><div class="tx"><code>:73&ndash;77</code> what is minted: a device id, a 256-bit token, its hash, and the clock.</div></li>
+      <li><div class="tx"><code>:82&ndash;90</code> the write, as a <code>batch</code> &mdash; two statements sent together. The <code>DELETE</code> first: one phone has one push address, so an existing row with the same address <em>is</em> this phone re-enrolling, and leaving it would double every future push. The comment on <code>= NULL</code> is the kind of SQL detail that bites: in SQL, <code>NULL = NULL</code> is not true, so send-only rows never delete one another. That is the wanted behaviour, for free.</div></li>
+      <li><div class="tx"><code>:93&ndash;98</code> the reply, carrying the raw token. This is the only moment it exists in readable form anywhere; the server keeps only the hash, and the phone stores it (step&nbsp;13).</div></li>
+    </ol>
+
+    <div class="why">
+      <p class="lab"><i></i>Why it is built this way</p>
+      <ul>
+        <li><strong>No pairing flow, no invitations, no accounts.</strong> Two codes, set once by hand, each naming a person. The whole feature is 99 lines because the product refuses to have more than two users.</li>
+      </ul>
+    </div>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what a wrong code returns (403 <code>invalid_code</code>) and why the reply takes the same time as a right one.</p></div>
+  </article>
+
+  <article class="step" id="s7">
+    <div class="step-head">
+      <span class="step-no">Step 7</span>
+      <h3>The send, line by line<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/routes/send.ts</span><span class="f">server/src/messages.ts</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>The one endpoint the whole product exists for. A phone says &ldquo;message 3&rdquo;; the server decides who that goes to, writes it down, and asks Google to wake the other phone. It never learns the words, and it is never told the recipient.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>:38</code> <code>recipientOf()</code> &mdash; the invariant in one line: <code>3 - person</code>. With two people the recipient is arithmetic, so there is no lookup to get wrong and no field to forge. A stolen token can only ever message its own partner.</div></li>
+      <li><div class="tx"><code>:24</code> <code>isUuid()</code>. The phone mints the id, and the id becomes a primary key, so it is validated rather than trusted &mdash; a client that could write arbitrary keys could collide with rows it does not own.</div></li>
+      <li><div class="tx"><code>:49&ndash;52</code> the hourly ceiling (step&nbsp;10) before anything else, so a runaway loop is refused cheaply.</div></li>
+      <li><div class="tx"><code>:54&ndash;61</code> validation: the body parses, <code>msg_id</code> is one of the four the server allows (<code>messages.ts</code> knows the numbers and deliberately not the words), <code>send_id</code> is a UUID if present.</div></li>
+      <li><div class="tx"><code>:73&ndash;82</code> the write, and the cleverest four lines in the file:
+<pre><code>INSERT OR IGNORE INTO sends (id, &hellip;) VALUES (?, ?, ?, ?, ?)
+&hellip;
+if (inserted.meta.changes === 0) return fail(c, 409, "duplicate_send_id", &hellip;)</code></pre>
+      Asking &ldquo;does this id exist?&rdquo; and then inserting would let two racing taps both pass the check. <code>INSERT OR IGNORE</code> lets the database decide, and <code>changes</code> &mdash; how many rows were actually written &mdash; is the only answer that cannot race. The row is written <em>before</em> any push, because a receipt arriving later has to find something to correlate against.</div></li>
+      <li><div class="tx"><code>:84&ndash;88</code> the recipient&rsquo;s devices: <code>WHERE person = ? AND fcm_token IS NOT NULL</code>. Her phones, minus any send-only rows.</div></li>
+      <li><div class="tx"><code>:92&ndash;98</code> the payload. Five string fields, one of them <code>msg_id: "3"</code>. FCM data values are strings only, which is why <code>String(&hellip;)</code> appears. Note what is absent: the text.</div></li>
+      <li><div class="tx"><code>:100&ndash;106</code> the fan-out. <code>Promise.all</code> starts every push at once and waits for all of them, rather than sending to her phones one after another &mdash; with a 10ms CPU budget, waiting in series would be the slow path for no gain. Priority <code>HIGH</code>, which is what wakes a phone in <a class="t" href="#g-doze">Doze</a>.</div></li>
+      <li><div class="tx"><code>:108&ndash;115</code> dead tokens deleted &mdash; but only the ones Google called <a class="t" href="#g-unregistered">UNREGISTERED</a>, which step&nbsp;8 explains in full.</div></li>
+      <li><div class="tx"><code>:117&ndash;125</code> the reply: <code>{send_id, delivered, sent_at}</code>, always 200. A <code>delivered</code> of zero is not a failure, it is &ldquo;she has no phone registered&rdquo;, which the app words differently. <code>sent_at</code> is the server&rsquo;s clock, and step&nbsp;20 is entirely about why that one number matters.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can trace what two identical requests with the same <code>send_id</code> produce: one 200, one 409, and exactly one push.</p></div>
+  </article>
+
+  <article class="step" id="s8">
+    <div class="step-head">
+      <span class="step-no">Step 8</span>
+      <h3>Proving it to Google, and the push itself<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/google-oauth.ts</span><span class="f">server/src/fcm.ts</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Google will only push to a phone if the asker owns the project. The server proves that by signing a short note with a private key, swapping the note for a pass that lasts an hour, and keeping the pass in the cache until it expires.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>google-oauth.ts:54</code> <code>buildSignedJwt()</code>. A <a class="t" href="#g-jwt">JWT</a> is three <a class="t" href="#g-base64url">base64url</a> chunks joined by dots: a header saying how it is signed, a claims object, and a signature over the first two. The claims are worth reading literally &mdash; <code>iss</code> who is asking, <code>scope</code> what for, <code>aud</code> who it is for, <code>iat</code>/<code>exp</code> valid from and until.</div></li>
+      <li><div class="tx"><code>:34</code> <code>pemToArrayBuffer()</code>. The key in the service-account file is <a class="t" href="#g-pem">PEM</a> text; <code>crypto.subtle.importKey</code> wants raw bytes. Strip the header and footer lines, un-base64 the middle.</div></li>
+      <li><div class="tx"><code>:69&ndash;83</code> the signing itself, through <a class="t" href="#g-webcrypto">WebCrypto</a> &mdash; <code>RSASSA-PKCS1-v1_5</code> with SHA-256, which OAuth calls <a class="t" href="#g-rs256">RS256</a>. Workers have no Node <code>crypto</code> module; this is the standard browser API instead.</div></li>
+      <li><div class="tx"><code>:105&ndash;128</code> <code>mintAccessToken()</code> posts the signed note to <code>oauth2.googleapis.com/token</code> as a form, and Google returns a token good for an hour.</div></li>
+      <li><div class="tx"><code>:138</code> <code>getAccessToken()</code> &mdash; cache first, mint only when cold, store for 3,300 seconds (55 minutes, five of margin). Read the comment: this is <em>not</em> an optimisation. One RSA signature sits close to the free plan&rsquo;s entire 10ms CPU allowance per request, so signing on every send would break the deployment. Caching moves it to roughly one request an hour.</div></li>
+      <li><div class="tx"><code>fcm.ts:64</code> <code>sendPush()</code>. The body is the whole contract with Google: a token, a <code>data</code> map, and a priority. The comment above it is a warning &mdash; adding a <code>notification</code> block would hand the drawing to Android, bypassing the app&rsquo;s channels and with them the four sounds.</div></li>
+      <li><div class="tx"><code>fcm.ts:40</code> <code>isPermanentTokenFailure()</code>, and the long comment. Only the nested <code>details[].errorCode === "UNREGISTERED"</code> proves a token is dead. The outer status is derived from the HTTP code and can equally mean a mistyped project id &mdash; which fails for <em>every</em> phone at once, so trusting it would delete all her rows, including the one her bearer token is found by, and lock her out until she re-enrolled by hand.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what is in the cache, how long for, and what breaks without it.</p></div>
+  </article>
+
+  <article class="step" id="s9">
+    <div class="step-head">
+      <span class="step-no">Step 9</span>
+      <h3>The receipts, and why they cannot go backwards<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/routes/receipts.ts</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Her phone reports twice: &ldquo;it arrived&rdquo; and &ldquo;she looked at it&rdquo;. The server records each the first time only, and pushes the news back to the sender so his tile can light up.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>:30&ndash;36</code> validation: a <code>send_id</code>, and a state that is exactly <code>delivered</code> or <code>seen</code>.</div></li>
+      <li><div class="tx"><code>:45&ndash;47</code> unknown id &rarr; 404. The nightly sweep (step&nbsp;10) removes rows after a week, so this is a normal answer, not a broken one.</div></li>
+      <li><div class="tx"><code>:56&ndash;58</code> the third invariant: <code>row.to_person !== device.person</code> &rarr; 403. The sender <em>holds</em> the send id &mdash; he made it &mdash; so without this check he could forge a &ldquo;seen&rdquo; for his own message and light his own tile gold.</div></li>
+      <li><div class="tx"><code>:68&ndash;82</code> the update, and the one word to take away:
+<pre><code>UPDATE sends SET seen_at      = COALESCE(seen_at, ?),
+                 delivered_at = COALESCE(delivered_at, ?)
+             WHERE id = ?</code></pre>
+      <a class="t" href="#g-coalesce">COALESCE</a> returns the first value that is not empty, so a timestamp already written wins and a repeated receipt changes nothing. That single word makes the endpoint <a class="t" href="#g-idempotent">idempotent</a> and the state <a class="t" href="#g-monotonic">monotonic</a> &mdash; and note that <code>seen</code> also fills <code>delivered_at</code>, because she cannot have read something that never arrived, even if the two reports raced.</div></li>
+      <li><div class="tx"><code>:84&ndash;106</code> push the news to the sender at <code>NORMAL</code> priority. A receipt is not urgent, and normal priority costs far less battery on his phone.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what happens when <code>delivered</code> arrives <em>after</em> <code>seen</code> for the same message &mdash; on the server, and (step&nbsp;16) on the sender&rsquo;s tile.</p></div>
+  </article>
+
+  <article class="step" id="s10">
+    <div class="step-head">
+      <span class="step-no">Step 10</span>
+      <h3>Ceilings, and the nightly sweep<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/src/limits.ts</span><span class="f">server/src/retention.ts</span><span class="f">server/wrangler.toml<b>:20&ndash;26</b></span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Two small files that keep the system from growing without limit: a cap on how often a person can send, and a job that deletes messages older than a week.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>limits.ts:8</code> <code>MAX_SENDS_PER_HOUR = 500</code>, and the comment calling it a circuit breaker rather than a usage limit. Human tapping never approaches it; a compromised phone or a loop does.</div></li>
+      <li><div class="tx"><code>limits.ts:14</code> the count: one <code>COUNT(*)</code> over the last 3,600 seconds &mdash; the query <code>idx_sends_from_time</code> exists for.</div></li>
+      <li><div class="tx"><code>limits.ts:34</code> the enrolment counter in KV, and the honest comment: KV is <a class="t" href="#g-eventual-consistency">eventually consistent</a>, so the count can lag under concurrent requests. That is acceptable because the codes are unguessable anyway; this is defence in depth, not the lock.</div></li>
+      <li><div class="tx"><code>retention.ts:15</code> <code>RETENTION_DAYS = 7</code>, with the reasoning: rows exist for receipt correlation (twenty seconds) and the hourly ceiling (one hour). Seven days is margin for debugging, not a history anyone relies on.</div></li>
+      <li><div class="tx"><code>retention.ts:29</code> <code>purgeOldSends(env, now = nowSeconds())</code>. The injectable clock is a testing seam: the test passes a fixed <code>now</code> and checks the boundary without waiting a week. Note <code>&lt;</code> rather than <code>&lt;=</code> &mdash; a row exactly on the cutoff survives one more night, and a test pins that so it stays a decision.</div></li>
+      <li><div class="tx"><code>wrangler.toml:26</code> <code>crons = ["17 3 * * *"]</code> &mdash; <a class="t" href="#g-cron">cron</a> for 03:17 every day. The comment explains the odd minute: schedules on the hour queue behind everyone else&rsquo;s on the platform.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say why a skipped nightly run needs no catching up. (The query is a cutoff, not a cursor: the next run deletes slightly more.)</p></div>
+  </article>
+
+  <article class="step" id="s11">
+    <div class="step-head">
+      <span class="step-no">Step 11</span>
+      <h3>The server&rsquo;s tests, and how to run them<span class="side srv">server</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">server/vitest.config.ts</span><span class="f">server/test/apply-migrations.ts</span><span class="f">server/test/send.test.ts</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Seventy-nine tests across eleven files, and they do not fake the server: they start the real Worker with a real throwaway database, send it real requests, and intercept only Google.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>vitest.config.ts</code> &mdash; <a class="t" href="#g-vitest">Vitest</a> is the test runner, and <code>@cloudflare/vitest-pool-workers</code> makes it run each test <em>inside</em> <a class="t" href="#g-workerd">workerd</a>, the same runtime Cloudflare uses live. <code>readD1Migrations</code> loads the <code>.sql</code> files from step&nbsp;4; the <code>bindings</code> block supplies stand-ins for the three secrets, so no real key is ever needed to run the suite.</div></li>
+      <li><div class="tx"><code>test/apply-migrations.ts</code> &mdash; three lines, run before each file: apply the migrations to a fresh in-memory D1. The schema under test is the schema that ships.</div></li>
+      <li><div class="tx"><code>test/send.test.ts:1&ndash;45</code> &mdash; the pattern. <code>SELF.fetch(&hellip;)</code> calls the Worker as a client would; <code>seed()</code> inserts a device row directly; <code>fetchMock</code> intercepts the FCM endpoint, and <code>disableNetConnect()</code> means a test that accidentally reaches the real internet fails instead of passing quietly.</div></li>
+      <li><div class="tx">Then skim the rest for what they pin: <code>auth</code> (8) the 401s, <code>enroll</code> (12) codes and rate limits, <code>send</code> (15) the ceiling, duplicates and fan-out, <code>receipts</code> (8) the 403 and the monotonic clamp, <code>fcm</code> (5) that only UNREGISTERED deletes a device, <code>retention</code> (7) the cutoff boundary, <code>crypto</code> (9), <code>messages</code> (6), <code>schema</code> (4) the CHECK constraint, <code>health</code> (2).</div></li>
+    </ol>
+
+    <h4>The commands</h4>
+    <div class="tw"><table>
+      <thead><tr><th>Command</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td class="m nw">npm test</td><td>Runs the suite once. <span class="cm">In this WSL checkout <code>npx</code> is broken, so use <code>node node_modules/vitest/vitest.mjs run</code>.</span></td></tr>
+        <tr><td class="m nw">npm run typecheck</td><td>TypeScript with no output &mdash; catches what the tests do not.</td></tr>
+        <tr><td class="m nw">npm run dev</td><td>The Worker on localhost, with a local database.</td></tr>
+        <tr><td class="m nw">npm run deploy</td><td>Ships it. Seconds, worldwide.</td></tr>
+        <tr><td class="m nw">npm run migrate:remote</td><td>Applies new <code>.sql</code> files to the live database.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You have run the suite and watched 79 pass. That is the fastest proof you have the whole server working on your machine.</p></div>
+  </article>
+</section>
+
+<!-- ===================== PART 2 ===================== -->
+<section class="part ch" id="p2">
+  <header class="part-head">
+    <svg class="pxn" data-n="2" role="img" aria-label="Part 2"></svg>
+    <p class="eyebrow">Part 2 &middot; the phone, sending</p>
+    <h2>What a tap actually does</h2>
+  </header>
+  <p class="part-note">Six sittings from the manifest to the request leaving the phone. <a class="t" href="#g-kotlin">Kotlin</a> reads close enough to any C-family language that you can follow it cold; the three ideas worth knowing before you start are <em>suspend functions</em>, <em>Flow</em> and <em>WorkManager</em>, and each is explained where it first appears.</p>
+
+  <article class="step" id="s12">
+    <div class="step-head">
+      <span class="step-no">Step 12</span>
+      <h3>How the app is wired together<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">app/src/main/AndroidManifest.xml</span>
+      <span class="f">LoveButtonApp.kt</span>
+      <span class="f">MainActivity.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>An Android app is not a program with one beginning. It is a handful of parts the system can start independently &mdash; a screen, a push handler, four home-screen tiles, a reboot listener &mdash; and the manifest is the list of them. Any one of them can be the reason the app comes to life.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>AndroidManifest.xml</code> top &mdash; four <code>uses-permission</code> lines, each with its reason. <code>INTERNET</code>, <code>RECEIVE_BOOT_COMPLETED</code> (redraw tiles after a reboot), <code>POST_NOTIFICATIONS</code> (Android 13 and later make this a question the user answers), and the battery-optimisation one whose comment explains why a sideloaded app may ask for it.</div></li>
+      <li><div class="tx"><code>&lt;application android:name=".LoveButtonApp"</code> &mdash; and <code>allowBackup="false"</code>, which keeps the token and the stored state out of Google&rsquo;s cloud backups.</div></li>
+      <li><div class="tx">The component list. One <a class="t" href="#g-activity">activity</a> (the screen), one <a class="t" href="#g-service">service</a> for pushes, five <a class="t" href="#g-broadcast-receiver">broadcast receivers</a>: four widget receivers &mdash; separate registrations so the launcher offers four choices, each with its own label and its own <code>@xml/widget_&hellip;</code> metadata &mdash; and <code>BootReceiver</code>.</div></li>
+      <li><div class="tx"><code>LoveButtonApp.kt</code>, all 17 lines. The <a class="t" href="#g-application-class">Application</a> class runs first whenever the process starts, <em>whatever</em> started it. So a push at 3am creates the notification channels and registers the unlock listener just as surely as the user opening the app does. Both lines are safe to repeat, which is what makes that work.</div></li>
+      <li><div class="tx"><code>MainActivity.kt:33&ndash;55</code> &mdash; splash installed before <code>super.onCreate</code>, then edge-to-edge window handling, then <code>setContent { }</code>, which is where <a class="t" href="#g-compose">Jetpack Compose</a> takes over: you describe the screen as functions, and the framework redraws whatever the changed data touches.</div></li>
+      <li><div class="tx"><code>MainActivity.kt:77&ndash;100</code> <code>Root()</code> &mdash; the entire navigation model. Not enrolled &rarr; <code>EnrolScreen</code>; otherwise <code>HomeScreen</code>, with setup and guide as two booleans. Read the comment on <code>null</code>: &ldquo;storage has not answered yet&rdquo; is a third state, and conflating it with &ldquo;not enrolled&rdquo; would flash the code prompt on every launch.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can list the five ways this app&rsquo;s process can be started, and say what runs first in every one of them.</p></div>
+  </article>
+
+  <article class="step" id="s13">
+    <div class="step-head">
+      <span class="step-no">Step 13</span>
+      <h3>What the phone remembers<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">data/Prefs.kt</span><span class="f">data/Messages.kt</span><span class="f">data/DeliverySetup.kt</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Five small files in the app&rsquo;s private storage, each with one job. The most important holds the token this phone signs its requests with. None of them is a database, and none is a message history.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>Messages.kt:29</code> <code>MESSAGES</code> &mdash; the catalogue: id, text, notification channel, sound file. This list is the thing the server does not have. A push carries <code>msg_id: 3</code> and this table turns it into words, a picture and a sound, locally, which is why the words never pass through Google.</div></li>
+      <li><div class="tx"><code>Prefs.kt:11</code> <code>preferencesDataStore(name = "love_button")</code>. <a class="t" href="#g-datastore">DataStore</a> is Android&rsquo;s small key-value file &mdash; a handful of values, written atomically, stored where only this app can read them.</div></li>
+      <li><div class="tx"><code>Prefs.kt:33&ndash;48</code> <code>enrolment</code> is a <a class="t" href="#g-flow">Flow</a>: a stream that emits the current value and then emits again every time the file changes. A screen that collects it redraws by itself when enrolment appears. Note the all-or-nothing map &mdash; three keys present or <code>null</code>.</div></li>
+      <li><div class="tx"><code>Prefs.kt:50</code> <code>suspend fun current()</code>. A <a class="t" href="#g-suspend">suspend function</a> can pause while it waits for the disk and resume later without blocking the thread it was on. Anything that reads storage in this app is a suspend function; that is why background jobs can call it freely.</div></li>
+      <li><div class="tx"><code>DeliverySetup.kt</code> &mdash; its own file rather than a key in <code>Prefs</code>, and the comment says why: <code>clearEnrolment()</code> calls <code>prefs.clear()</code>, and these settings belong to the phone, not to the account.</div></li>
+    </ol>
+
+    <div class="tw"><table>
+      <thead><tr><th>File</th><th>Holds</th><th>Read in step</th></tr></thead>
+      <tbody>
+        <tr><td class="m">love_button</td><td>Token, which person this phone is, partner&rsquo;s name</td><td>13</td></tr>
+        <tr><td class="m">current_send</td><td>The one latest message, for the app screen</td><td>20</td></tr>
+        <tr><td class="m">pending_sends</td><td>Which tile each recent send belongs to</td><td>17</td></tr>
+        <tr><td class="m">unseen_sends</td><td>Arrivals waiting for the next unlock</td><td>19</td></tr>
+        <tr><td class="m">delivery_setup</td><td>Whether the Xiaomi steps were confirmed</td><td>23</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say why the four messages&rsquo; words live here and not on the server &mdash; and what would have to change to add a fifth message (this file, and one line in <code>server/src/messages.ts</code>).</p></div>
+  </article>
+
+  <article class="step" id="s14">
+    <div class="step-head">
+      <span class="step-no">Step 14</span>
+      <h3>The client: five calls, no framework<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">data/ApiModels.kt</span><span class="f">data/LoveButtonApi.kt</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>One class holds every conversation the phone has with the server. It is small enough to read in a sitting, which was the point &mdash; the alternative was a library that would have saved a few lines and hidden the rest.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>ApiModels.kt</code> &mdash; one <a class="t" href="#g-data-class">data class</a> per request and reply. <code>@Serializable</code> lets the compiler generate the JSON conversion; <code>@SerialName("msg_id")</code> maps the wire&rsquo;s <code>snake_case</code> to Kotlin&rsquo;s <code>camelCase</code>, so both sides keep their own conventions.</div></li>
+      <li><div class="tx"><code>ApiModels.kt:28</code> <code>SendRequest</code> &mdash; two fields, and read what is missing: no recipient. The comment names the reason, and step&nbsp;7 is the server side of the same decision.</div></li>
+      <li><div class="tx"><code>ApiModels.kt:36</code> <code>sentAt: Long = 0L</code> &mdash; a default, so an app talking to an older Worker still parses the reply. Zero then means &ldquo;no server clock&rdquo;, and step&nbsp;20 handles that case explicitly.</div></li>
+      <li><div class="tx"><code>ApiModels.kt:65</code> <code>sealed interface EnrolResult</code> &mdash; a <a class="t" href="#g-sealed">sealed</a> type: a closed set of outcomes (<code>Ok</code>, <code>InvalidCode</code>, <code>RateLimited</code>, <code>Failed</code>) that the compiler forces the screen to handle. Three of them exist because the user can do something different about each.</div></li>
+      <li><div class="tx"><code>LoveButtonApi.kt:37</code> <code>post()</code> &mdash; <a class="t" href="#g-okhttp">OkHttp</a> request building, and a comment worth reading twice: do not also set <code>Content-Type</code> by hand, because OkHttp derives it from the body and overwrites yours.</div></li>
+      <li><div class="tx"><code>:46</code> <code>execute()</code> &mdash; <code>withContext(Dispatchers.IO)</code> moves the blocking network call onto a thread pool meant for waiting.</div></li>
+      <li><div class="tx"><code>:51</code>, <code>:83</code>, <code>:101</code>, <code>:124</code> the four calls, and notice that each fails differently on purpose. <code>enrol</code> returns a result the screen can word; <code>registerDevice</code> returns a boolean; <code>send</code> <em>throws</em>, because its caller is a background job whose retry is the right response; <code>receipt</code> returns false without throwing, because a rejected receipt should not be retried.</div></li>
+    </ol>
+
+    <div class="why">
+      <p class="lab"><i></i>Why it is built this way</p>
+      <ul>
+        <li><strong>The token is never logged.</strong> It is the only credential the phone has, and <code>adb logcat</code> is readable by anyone holding the phone.</li>
+      </ul>
+    </div>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say why <code>send</code> throws while <code>receipt</code> returns a boolean.</p></div>
+  </article>
+
+  <article class="step" id="s15">
+    <div class="step-head">
+      <span class="step-no">Step 15</span>
+      <h3>One tap, from finger to request<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">widget/MessageWidget.kt</span>
+      <span class="f">widget/LoveWidget.kt</span>
+      <span class="f">work/Sending.kt</span>
+      <span class="f">work/SendWorker.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>The tile fills half-way the moment you touch it, and then nothing else happens on the spot: the tap writes down what it wants, hands the job to Android&rsquo;s background queue, and returns. On a phone that kills apps for fun, that queue is the only thing that survives.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>MessageWidget.kt:39</code> <code>provideGlance</code> &mdash; <a class="t" href="#g-glance">Glance</a> is Compose for home-screen widgets: you write the same kind of function, and it is translated into the restricted views a launcher can draw. <code>currentState(KEY_STATE)</code> reads this tile&rsquo;s own stored state.</div></li>
+      <li><div class="tx"><code>MessageWidget.kt:46&ndash;73</code> <code>Tile()</code> &mdash; a full-size image with a click action, no text and no background. The state is carried entirely by which drawable is shown, plus one tint for the failed state (step&nbsp;22).</div></li>
+      <li><div class="tx"><code>MessageWidget.kt:32&ndash;35</code> the two keys: where a tile stores its state, and the parameter a tap carries. <code>LoveWidget.kt:12</code> and <code>OtherWidgets.kt</code> then are four one-line subclasses &mdash; four registrations, one implementation.</div></li>
+      <li><div class="tx"><code>LoveWidget.kt:25</code> <code>SendAction.onAction</code> &mdash; the tap handler. Two statements: paint <code>SENDING</code>, then <code>beginSend</code>. Nothing blocking may happen here; this runs on the launcher&rsquo;s clock, and a slow request would freeze the home screen.</div></li>
+      <li><div class="tx"><code>work/Sending.kt:27</code> <code>beginSend()</code> &mdash; the hinge of the whole app, and only four statements. It mints the <code>send_id</code> and the tap time <em>here</em>, records the send, and queues two jobs. Read the comment: the worker is held back until the phone has a connection, so anything the worker owned would not have happened yet &mdash; a tap with no signal would have produced nothing on screen at all. Both tap paths, widget and app button, come through this one function.</div></li>
+      <li><div class="tx"><code>SendWorker.kt:40&ndash;58</code> <code>doWork()</code> &mdash; a <a class="t" href="#g-workmanager">WorkManager</a> job: persisted to disk, survives the process being killed, retried when its constraints are met again. It reads the id and tap time out of its input data rather than making new ones, so a retry carries the original tap.</div></li>
+      <li><div class="tx"><code>SendWorker.kt:66</code> the abandonment check &mdash; <code>if (windowClosed(tappedAt)) return Result.success()</code>. If twenty seconds passed while this was queued, the send is dropped rather than delivered: the sender has already been told it did not happen, and buzzing her now would be a lie. Step&nbsp;17 owns that window.</div></li>
+      <li><div class="tx"><code>:71&ndash;73</code> <code>pending.remember(sendId, appWidgetId)</code> &mdash; written <em>before</em> the request leaves, because a receipt can arrive before the reply does.</div></li>
+      <li><div class="tx"><code>:77&ndash;99</code> the call itself, then <code>update(sendId, SENT)</code>, then <code>markSentAt(&hellip;)</code> with the server&rsquo;s clock (step&nbsp;20), then <code>settle</code>. The <code>catch</code> arm paints <code>FAILED</code> and asks for a retry.</div></li>
+      <li><div class="tx"><code>:114&ndash;133</code> <code>settle()</code> &mdash; show a state for its hold time, then return the tile to idle. <code>SENT</code> is the exception: it waits out the whole window because a receipt may still be coming, and deliberately does <em>not</em> clear the tile afterwards. The comment explains the rule that decides it: two writers racing on one tile at the same millisecond is a coin toss, so there is one writer, and it is <code>TimeoutWorker</code>.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what the id and timestamp would break if they were made inside <code>SendWorker</code> instead of in <code>beginSend</code>. (Two things: a tap with no signal shows nothing, and every retry resets the clock.)</p></div>
+  </article>
+
+  <article class="step" id="s16">
+    <div class="step-head">
+      <span class="step-no">Step 16</span>
+      <h3>The ladder, and the races it survives<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">widget/WidgetState.kt</span><span class="f">widget/WidgetStateWriter.kt</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>A tile has six states and climbs through them in one direction. Two files: one says what the states are and which way is up, the other writes them into a tile without two writers standing on each other.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>WidgetState.kt:11</code> the six: <code>IDLE, SENDING, SENT, FAILED, DELIVERED, SEEN</code>.</div></li>
+      <li><div class="tx"><code>:20</code> <code>holdMillis</code> &mdash; how long each is shown. <code>SENDING</code> has none (it ends when the request ends). <code>SENT</code> and <code>DELIVERED</code> hold for the whole twenty-second window, because something may still arrive; <code>SEEN</code> is terminal, so four seconds is enough; <code>FAILED</code> three.</div></li>
+      <li><div class="tx"><code>:44</code> <code>fromName()</code> &mdash; an unrecognised stored name becomes <code>IDLE</code> rather than throwing. A tile&rsquo;s store outlives reinstalls, so a name written by a different build can come back, and an exception inside a widget update leaves a blank tile that no tap can fix.</div></li>
+      <li><div class="tx"><code>:55</code> <code>isAwaitingOutcome</code> &mdash; only <code>SENDING</code> and <code>SENT</code> are waiting on something that might never come, so only those two can time out.</div></li>
+      <li><div class="tx"><code>:72&ndash;94</code> <code>ladderRank</code> and <code>advancesTo</code>, the heart of the file. The rank is written out explicitly rather than using the enum&rsquo;s own order, so that reordering the declaration for readability cannot silently change which receipt wins. And the comment records the bug that caused it: on hardware, <code>seen</code> arrived 54ms <em>before</em> the <code>delivered</code> for the same message, and written in arrival order the late <code>delivered</code> undid the gold.</div></li>
+      <li><div class="tx"><code>WidgetStateWriter.kt:19</code>&ndash;<code>:33</code> the pair: <code>setWidgetState</code> writes unconditionally (a reset is not a step backwards), <code>advanceWidgetState</code> writes only if it advances. Receipts use the second.</div></li>
+      <li><div class="tx"><code>:40&ndash;60</code> the private writer. Two details to notice. It takes a platform <code>appWidgetId</code>, an <code>Int</code>, rather than Glance&rsquo;s own <code>GlanceId</code>, because an <code>Int</code> can be put into a job&rsquo;s input data and survive the process dying. And the compare-and-write both happen inside one <code>updateAppWidgetState</code> block, so no concurrent writer can land in between.</div></li>
+      <li><div class="tx"><code>:69&ndash;77</code> the fan-out. Each widget class owns its own instances, so the redraw is offered to all four and only the class that actually holds this id repaints. Asking the wrong one writes the state and quietly draws nothing.</div></li>
+      <li><div class="tx"><code>:103</code> <code>failWidgetStateIfWaiting</code> and <code>:126</code> <code>clearWidgetStateIf</code> &mdash; both conditional, both returning early when they changed nothing. The comments spell out the race each one closes: only the writer whose own value is still on screen is allowed to clear it.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can predict the tile for this sequence: <code>SENT</code>, then <code>seen</code>, then a late <code>delivered</code>. (Gold, and it stays gold.)</p></div>
+  </article>
+
+  <article class="step" id="s17">
+    <div class="step-head">
+      <span class="step-no">Step 17</span>
+      <h3>The twenty seconds<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">data/PendingSends.kt</span><span class="f">work/TimeoutWorker.kt</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>A tap is worth following for twenty seconds. Inside that window a receipt lights the tile it came from; outside it, the tile gives up and goes grey, and late news is dropped. One constant, and one small file that remembers which tile each send belongs to.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>PendingSends.kt:16</code> <code>PENDING_WINDOW_MS = 20_000L</code>, imported by everything that needs it. Three places had their own copy once; the preflight review caught it before it could drift.</div></li>
+      <li><div class="tx"><code>:32</code> <code>windowClosed(at, now)</code> &mdash; one definition of &ldquo;too late&rdquo;, and note the negative-age case: a clock correction going backwards must not grey out a send made a second ago.</div></li>
+      <li><div class="tx"><code>:50</code> <code>remember()</code> &mdash; entries are <code>"appWidgetId:timestamp"</code> keyed by send id. A separate file from the enrolment, deliberately: disposable correlation state should never share a file with the thing whose loss costs a re-enrolment.</div></li>
+      <li><div class="tx"><code>:67</code> <code>widgetFor()</code> &mdash; returns <code>null</code> for an expired entry. The comment warns of the trap: this can never be used to decide what to do <em>after</em> waiting out the window, because by then every entry is expired by construction.</div></li>
+      <li><div class="tx"><code>:85</code> <code>remainingMs()</code> &mdash; how long is left of the original window, used to hold a <code>delivered</code> tile lit for exactly as long as a <code>seen</code> could still match it.</div></li>
+      <li><div class="tx"><code>:101</code> <code>forgetExpired()</code> &mdash; without it the store grows forever, one entry per send that never got a receipt.</div></li>
+      <li><div class="tx"><code>TimeoutWorker.kt:41&ndash;52</code> &mdash; twenty seconds after the tap, mark the tile failed if it is still waiting, hold three seconds, clear. Both writes are conditional, so a receipt that arrived first makes the whole job a no-op.</div></li>
+      <li><div class="tx"><code>TimeoutWorker.kt:65</code> <code>enqueue()</code> &mdash; and the most important line in the file is the one that <em>is not</em> there. This job carries no network constraint, on purpose: the send it shadows waits for a connection, so a timeout that waited for the same thing would never fire in exactly the case it exists for.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say why the app screen needs no <code>TimeoutWorker</code>. (It derives the timeout every time it reads &mdash; step&nbsp;20.)</p></div>
+  </article>
+</section>
+
+<!-- ===================== PART 3 ===================== -->
+<section class="part ch" id="p3">
+  <header class="part-head">
+    <svg class="pxn" data-n="3" role="img" aria-label="Part 3"></svg>
+    <p class="eyebrow">Part 3 &middot; the phone, receiving</p>
+    <h2>What arrives, and what it does</h2>
+  </header>
+  <p class="part-note">Three sittings on the other half of the round trip: the push landing, the decision that she has seen it, and the one record both phones agree on.</p>
+
+  <article class="step" id="s18">
+    <div class="step-head">
+      <span class="step-no">Step 18</span>
+      <h3>The push lands, and the sound plays<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">push/PushService.kt</span><span class="f">push/Notifications.kt</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Google wakes the app and hands it five short strings. The app looks up which message that is, posts a notification on that message&rsquo;s own channel &mdash; which is what makes the right sound play &mdash; and tells the server it arrived.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>PushService.kt:27</code> &mdash; the class extends <code>FirebaseMessagingService</code>, and the manifest entry from step&nbsp;12 is what lets Play Services start it. Because the Worker never sends a <code>notification</code> block, every message lands in this code rather than being drawn by Android.</div></li>
+      <li><div class="tx"><code>:29</code> <code>onNewToken</code> &mdash; push addresses rotate. The new one goes through a job (step&nbsp;19), not an inline request.</div></li>
+      <li><div class="tx"><code>:35&ndash;44</code> the <code>"msg"</code> branch: parse <code>msg_id</code>, <code>from_name</code>, <code>send_id</code>, <code>sent_at</code>. Seconds on the wire, milliseconds in the app &mdash; there is the <code>* 1000L</code>.</div></li>
+      <li><div class="tx"><code>:45&ndash;61</code> order matters here: post the notification <em>first</em>, then report <code>delivered</code>. A receipt for a notification that failed to post would be a lie.</div></li>
+      <li><div class="tx"><code>Notifications.kt:49</code> <code>ensureChannels()</code> &mdash; four <a class="t" href="#g-notification-channel">channels</a>, one per message, created at every start-up (creating an existing channel does nothing). Since Android 8 the channel owns the sound, not the notification, which is the entire reason four channels exist.</div></li>
+      <li><div class="tx"><code>Notifications.kt:35</code> <code>soundUriString()</code> &mdash; and read its comment, which is the best small trap in the codebase. A channel freezes its sound at creation and can never be changed. Resource <em>ids</em> are renumbered whenever resources are added, so an id-based sound URI silently stops resolving one day &mdash; and Android&rsquo;s response to a sound it cannot resolve is silence, with no error anywhere. The name-based form survives renumbering.</div></li>
+      <li><div class="tx"><code>Notifications.kt:88</code> <code>postMessageNotification()</code> &mdash; title is the sender&rsquo;s name, text is the message, icon is a flat heart silhouette tinted crimson. The comment explains why the tray gets a silhouette rather than the full artwork: Android builds the small icon from the drawable&rsquo;s transparency alone and throws the colours away.</div></li>
+      <li><div class="tx"><code>:130&ndash;134</code> a new notification id each time, so four taps stack as four messages instead of one that keeps changing.</div></li>
+      <li><div class="tx">Back to <code>PushService.kt:63&ndash;101</code>, the <code>"receipt"</code> branch: never a notification (a phone that buzzes when she reads a message is a phone nobody wants), update the app&rsquo;s record first, then look up the tile, advance it, and hold it lit for whatever the window has left.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what the push actually contains, and why changing a sound means deleting a channel.</p></div>
+  </article>
+
+  <article class="step" id="s19">
+    <div class="step-head">
+      <span class="step-no">Step 19</span>
+      <h3>Seen: deciding whether anyone is looking<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">push/Presence.kt</span>
+      <span class="f">push/UnlockReceiver.kt</span>
+      <span class="f">data/UnseenSends.kt</span>
+      <span class="f">work/ReceiptWorker.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>&ldquo;Seen&rdquo; does not mean she tapped the notification &mdash; a message read on the lock screen and swiped away was still read. It means the phone was awake and unlocked. If it was not, the message waits, and the next unlock reports it.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>Presence.kt:15</code> <code>couldBeLookingNow(interactive, keyguardLocked)</code> &mdash; two booleans, both required. A lit screen still behind the lock screen means the phone woke <em>for</em> the notification; an unlocked phone with the screen off is one in a pocket. The pure two-argument version exists so it can be tested without a device; <code>:24</code> is the wrapper that asks the real phone, and returns false if either system service is missing rather than guessing.</div></li>
+      <li><div class="tx"><code>PushService.kt:108&ndash;123</code> <code>reportOrRememberSeen()</code> &mdash; report now, or write the id down. <code>runBlocking</code> here rather than a launched coroutine, and the comment is the reason: this runs on FCM&rsquo;s thread, and the wakelock that keeps the phone awake ends when the method returns. A fire-and-forget write could lose the id in exactly the case it exists for &mdash; a sleeping phone.</div></li>
+      <li><div class="tx"><code>UnseenSends.kt:44</code> <code>drain()</code> &mdash; read and clear inside one edit, so two unlock broadcasts arriving together cannot both take the same ids.</div></li>
+      <li><div class="tx"><code>UnlockReceiver.kt:26&ndash;44</code> &mdash; on unlock, drain and enqueue a <code>seen</code> for each. <code>goAsync()</code> tells Android the receiver is still working, so the process is not reclaimed mid-drain.</div></li>
+      <li><div class="tx"><code>UnlockReceiver.kt:63&ndash;75</code> &mdash; registered in code, never in the manifest, and the comment says why: <code>ACTION_USER_PRESENT</code> is not on Android&rsquo;s exemption list, so a manifest-declared receiver for it would look correct and never run. It is registered from the Application class, so the push that delivers the message is also what brings this listener up &mdash; which is the window that matters.</div></li>
+      <li><div class="tx"><code>ReceiptWorker.kt:27&ndash;45</code> &mdash; and read the retry policy carefully. A rejected receipt (403, 404) returns success, because retrying cannot help; only a thrown network error gets <code>Result.retry()</code>.</div></li>
+      <li><div class="tx"><code>RegisterTokenWorker.kt</code> &mdash; the same shape for a rotated push address.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what happens to a message that arrives while the phone is face-down on a table all night. (Notification and sound now, <code>delivered</code> now, <code>seen</code> at the next unlock.)</p></div>
+  </article>
+
+  <article class="step" id="s20">
+    <div class="step-head">
+      <span class="step-no">Step 20</span>
+      <h3>The shared bubble, and the clock both phones trust<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span><span class="f">data/CurrentSend.kt</span><span class="f">all 245 lines</span></div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Both phones show the same thing in the big area at the top: the most recent message, whoever sent it. This file is how two phones with two different clocks agree on which message that is &mdash; the hardest small problem in the app.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>:24&ndash;36</code> <code>SendSnapshot</code> &mdash; six fields, and two of them are clocks. <code>at</code> is this phone&rsquo;s own clock at the tap, and feeds the timeout only. <code>serverAt</code> is the server&rsquo;s clock, and feeds the ordering only. Keeping them apart is the design.</div></li>
+      <li><div class="tx"><code>:59&ndash;66</code> <code>receivedWins()</code> &mdash; four lines, deciding whether an arriving message takes the bubble. Server clock against server clock, never against the local one: two clocks pretending to be one would disagree exactly when it mattered. And because that clock is in <em>seconds</em>, two sends moments apart routinely carry the same value, so the send id breaks the tie. The tie-break is arbitrary, but it is a <a class="t" href="#g-total-order">total order</a>, and both phones hold both ids, so both break it the same way.</div></li>
+      <li><div class="tx"><code>:89&ndash;90</code> <code>displayState()</code> &mdash; the timeout, derived on every read rather than written by a timer. Two things fall out for free: the twenty-second mark needs no surviving process, and a send from an hour ago that nothing came back for reads grey the moment the screen opens.</div></li>
+      <li><div class="tx"><code>:135</code> <code>start()</code> &mdash; a new send replaces the record outright. A new subject, not an update: it must not inherit the previous one&rsquo;s provenance or its place in the ordering.</div></li>
+      <li><div class="tx"><code>:162</code> <code>update()</code> &mdash; two guards in one edit block: it must be the same send (a receipt can arrive after you have sent something else), and it must advance (step&nbsp;16).</div></li>
+      <li><div class="tx"><code>:188</code> <code>markSentAt()</code> &mdash; the reclaim, and the comment is worth reading twice. Until the server&rsquo;s reply lands, your own send has no server timestamp, so anything arriving takes the bubble unconditionally &mdash; even a message the server stamped <em>earlier</em>. Her phone, whose send did have a timestamp, keeps the newer one, and the two bubbles disagree. This takes it back, but only from something genuinely older and only if it is hers. It was written after the disagreement was seen on real phones.</div></li>
+      <li><div class="tx"><code>:224</code> <code>receive()</code> &mdash; a message from her, stored as <code>SEEN</code>. That one choice buys the gold artwork, immunity from the timeout (<code>SEEN</code> is not awaiting anything) and the top of the ladder, so no late receipt can move it. A seventh state would have had to be taught to the widget art, the guide and the ladder for something no widget can ever show.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can answer: both people tap within the same second. Which message ends up in both bubbles? (The one whose send id sorts higher &mdash; and crucially, the <em>same</em> one on both phones.)</p></div>
+  </article>
+</section>
+
+<!-- ===================== PART 4 ===================== -->
+<section class="part ch" id="p4">
+  <header class="part-head">
+    <svg class="pxn" data-n="4" role="img" aria-label="Part 4"></svg>
+    <p class="eyebrow">Part 4 &middot; the face of it</p>
+    <h2>What you actually see</h2>
+  </header>
+  <p class="part-note">Three sittings on the screens and the artwork. Nothing here changes what the app does &mdash; and all of it is where the app stops feeling like a form with four buttons.</p>
+
+  <article class="step" id="s21">
+    <div class="step-head">
+      <span class="step-no">Step 21</span>
+      <h3>The home screen, budgeted to the pixel<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">ui/HomeScreen.kt</span>
+      <span class="f">ui/Theme.kt</span>
+      <span class="f">ui/Sticker.kt</span>
+      <span class="f">ui/StateCopy.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>One screen: a big card at the top showing the latest message, four buttons with pandas standing on them, and two small buttons at the bottom. It never scrolls, which means everything has to fit &mdash; and that turns out to be the hardest part.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>Theme.kt:18&ndash;36</code> &mdash; the Sticker Book: six colours, a hard ink keyline, and a 2dp offset shadow. Note what is <em>not</em> here: the ladder&rsquo;s state colours, which live in <code>PixelPalette</code> so the guide can never describe a colour the widget no longer draws.</div></li>
+      <li><div class="tx"><code>Sticker.kt:20</code> <code>StickerBox</code> &mdash; the shadow is a second box drawn behind the first, because Compose&rsquo;s own elevation shadow is soft and would not read as a sticker at all.</div></li>
+      <li><div class="tx"><code>StateCopy.kt:13&ndash;47</code> &mdash; one vocabulary for the six states, words and face kept separate so the focal area can animate the face while the guide prints the whole line. There were two vocabularies once; the guide then read as an explanation of a different screen.</div></li>
+      <li><div class="tx"><code>HomeScreen.kt:78&ndash;128</code> &mdash; the fixed heights, each with the reason it is fixed. The focal card does not wrap its content, because a card that grows by one line pushes the footer off the bottom of the screen.</div></li>
+      <li><div class="tx"><code>HomeScreen.kt:132</code> <code>fitHome()</code> &mdash; the screen is measured first, then three things give in order of what costs least: the air between stickers, then the focal card, then the pandas, each with a floor it cannot go below. The comment records the bug: a <a class="t" href="#g-compose">Column</a> measures children in order, so the last child gets what is left &mdash; which was nothing, and the footer drew as two empty squashed stickers.</div></li>
+      <li><div class="tx"><code>:172&ndash;179</code> <code>LaunchedEffect</code> &mdash; the stored state does not change when a send times out, because the timeout is derived (step&nbsp;20). So while the screen is open, nothing would prompt a redraw at the twenty-second mark: this sleeps exactly that long and then nudges one recomposition.</div></li>
+      <li><div class="tx"><code>:185&ndash;200</code> &mdash; the delivery-setup nudge, re-read on every <code>ON_RESUME</code> because the two Android checks are read live from the system and the user may have just changed them in Settings.</div></li>
+      <li><div class="tx"><code>:215&ndash;287</code> the focal area: the animated icon, the swaying state line, and a settled line that appears only on <code>SEEN</code> &mdash; in a slot that is always reserved, so its arrival moves nothing above it.</div></li>
+      <li><div class="tx"><code>:289&ndash;345</code> the four message stickers. The panda is a sibling drawn above the button, not inside it, because a sticker clips its own content and the panda&rsquo;s head has to break out over the top edge. It is deliberately not clickable, so taps fall through to the button underneath.</div></li>
+      <li><div class="tx"><code>:322&ndash;331</code> the tap itself: haptic feedback first, then <code>beginSend</code> &mdash; the same function the widget calls (step&nbsp;15).</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say what changes on this screen when a receipt arrives, and what does not move.</p></div>
+  </article>
+
+  <article class="step" id="s22">
+    <div class="step-head">
+      <span class="step-no">Step 22</span>
+      <h3>The pixel art, from ASCII to animation<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">scripts/pixel_icons.py<b>:1&ndash;40</b></span>
+      <span class="f">widget/PixelGrids.kt</span>
+      <span class="f">widget/WidgetArt.kt</span>
+      <span class="f">ui/PixelArt.kt</span>
+      <span class="f">ui/PixelLadder.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Every icon in the app is a little picture typed out as text. One script turns those grids into the flat pictures the widgets show; the app redraws the same grids square by square when it wants to animate them. Both read the same source, so they cannot drift apart.</p>
+    </div>
+
+<pre><code>"................",     <span class="cm">&larr; '.' empty   'X' solid</span>
+"...XXX....XXX...",     <span class="cm">&larr; 's' shine (highlight)</span>
+"..XssXX..XXXXX..",     <span class="cm">&larr; 'o' hole (inside the shape)</span>
+".XssXXXXXXXXXXX.",     <span class="cm">   the heart, from PixelGrids.kt</span></code></pre>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>pixel_icons.py</code> lines 1&ndash;40 &mdash; the format, and the rule that makes the whole thing hold together: the <em>outline</em> variant is derived (a solid cell touching an empty one), never drawn by hand. Run <code>python3 scripts/pixel_icons.py</code> and it writes 20 <a class="t" href="#g-vectordrawable">VectorDrawables</a> into <code>res/drawable</code>, the notification silhouette, a preview sheet, and <code>PixelGrids.kt</code>.</div></li>
+      <li><div class="tx"><code>PixelGrids.kt</code> &mdash; generated, never edited by hand. Four grids, 16&times;16 and up.</div></li>
+      <li><div class="tx"><code>WidgetArt.kt:15</code> <code>PixelPalette</code> &mdash; seven <a class="t" href="#g-argb">ARGB</a> ints, plain numbers rather than Compose colours so that the widget, the Canvas and the guide can all read them without dragging in each other&rsquo;s dependencies.</div></li>
+      <li><div class="tx"><code>WidgetArt.kt:47</code> <code>iconFor(msgId, state)</code> &mdash; the lookup from message and state to a drawable, shared by the widget and the guide screen. The guide explains what the widget draws, so it must be structurally unable to show something else.</div></li>
+      <li><div class="tx"><code>PixelArt.kt:31</code> <code>isBorderCell()</code> &mdash; the same edge rule as the generator, and the comment records what happened when they disagreed on 22 cells: every eye and mouth got ringed in the dark border colour and the bubble&rsquo;s face read as uncanny.</div></li>
+      <li><div class="tx"><code>PixelArt.kt:125</code> <code>cellColor()</code> &mdash; one cell, one state, one colour, and the whole ladder is visible in the <code>when</code>: idle draws only the outline, failed the same in grey, sent fills crimson, delivered pink, seen pink with a gold rim.</div></li>
+      <li><div class="tx"><code>PixelArt.kt:160</code> <code>cellRect()</code> &mdash; rounding so neighbouring squares share an edge exactly. Without it, fractional positions leave hairline gaps and the white card shows through as pale lines between the pixels.</div></li>
+      <li><div class="tx"><code>PixelLadder.kt:32&ndash;68</code> the three animations, each a pure function that can be tested without a screen: <code>fillRowsVisible</code> (the fill rising bottom to top), <code>rippleReached</code> (delivered, expanding from the centre), <code>blinkAmount</code> (a blink every 3.4 seconds).</div></li>
+      <li><div class="tx"><code>PixelLadder.kt:141&ndash;184</code> <code>borderRingOrder</code> and <code>gildOrder</code> &mdash; the gold light running round the outline on <code>seen</code>. To run <em>round</em> a shape you need the border cells in a walking order, so the code splits the border into touching pieces and walks each one, preferring the most constrained next cell. The paw&rsquo;s toes are separate blobs, which is why one ring was never enough.</div></li>
+      <li><div class="tx"><code>PixelLadder.kt:196</code> <code>AnimatedPixelIcon</code> &mdash; and the first thing it does is ask whether animations are switched off system-wide, in which case every stage draws at rest.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say why the app redraws the grid itself instead of showing the same VectorDrawable the widget uses. (A drawable cannot be lit one cell at a time, and lighting cells one at a time is the entire animation.)</p></div>
+  </article>
+
+  <article class="step" id="s23">
+    <div class="step-head">
+      <span class="step-no">Step 23</span>
+      <h3>Enrol, delivery setup, and the guide<span class="side phn">phone</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">ui/EnrolScreen.kt</span>
+      <span class="f">ui/SetupScreen.kt</span>
+      <span class="f">device/DeviceSetup.kt</span>
+      <span class="f">ui/GuideScreen.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>Three screens you see rarely: the one that sets the phone up, the checklist that makes sure messages can actually arrive on a Xiaomi, and the page explaining what the colours mean.</p>
+    </div>
+
+    <h4>Read it in this order</h4>
+    <ol class="walk">
+      <li><div class="tx"><code>EnrolScreen.kt</code> &mdash; a code field and a button. It asks Play Services for this phone&rsquo;s push address, calls <code>/v1/enroll</code>, and saves what comes back. The three outcomes from step&nbsp;14&rsquo;s sealed type each get their own sentence.</div></li>
+      <li><div class="tx"><code>SetupScreen.kt:65</code> <code>deliveryReady()</code> &mdash; two checks Android will answer (notifications enabled, battery optimisation exempt) and, on a Xiaomi, one the phone will not: MIUI exposes no way to read Autostart, so it counts only once it has been confirmed by hand.</div></li>
+      <li><div class="tx"><code>DeviceSetup.kt:44</code> <code>startOrFallBack()</code> &mdash; MIUI&rsquo;s settings screens are private component names that differ between versions. Every one of them is opened through this, so a build that renamed the activity falls back to the app&rsquo;s own settings page instead of crashing.</div></li>
+      <li><div class="tx"><code>DeviceSetup.kt:106</code> <code>isNotificationPermissionPermanentlyDenied()</code> &mdash; a genuinely awkward API, explained in the comment: the flag it reads is false both <em>before</em> the first ask and <em>after</em> a permanent denial, so it is only meaningful immediately after a request came back denied.</div></li>
+      <li><div class="tx"><code>GuideScreen.kt:8&ndash;30</code> &mdash; the ladder in order, drawn with <code>iconFor(&hellip;)</code>: the widget&rsquo;s own pictures, unmodified. A guide that drew its own approximation would be teaching you about a picture that is not on your phone.</div></li>
+    </ol>
+
+    <div class="check"><span class="t">Got it&nbsp;when</span><p>You can say why the MIUI steps are a checkbox rather than a check.</p></div>
+  </article>
+</section>
+
+<!-- ===================== PART 5 ===================== -->
+<section class="part ch" id="p5">
+  <header class="part-head">
+    <svg class="pxn" data-n="5" role="img" aria-label="Part 5"></svg>
+    <p class="eyebrow">Part 5 &middot; proof</p>
+    <h2>Proving it works, and reading it whole</h2>
+  </header>
+
+  <article class="step" id="s24">
+    <div class="step-head">
+      <span class="step-no">Step 24</span>
+      <h3>The app&rsquo;s tests, and one tap traced through every file<span class="side both">both</span></h3>
+    </div>
+    <div class="open"><span class="lab">Open</span>
+      <span class="f">app/src/test/&hellip;/SharedBubbleTest.kt</span>
+      <span class="f">SendTimeoutTest.kt</span>
+      <span class="f">WidgetStateTest.kt</span>
+    </div>
+
+    <div class="plain">
+      <p class="lab"><i></i>In plain words</p>
+      <p>The app has 138 tests in 17 files. Almost all of them test the decisions rather than the drawing: which receipt wins, when a send is too old, what the bubble does when two messages arrive at once.</p>
+    </div>
+
+    <h4>How the app&rsquo;s tests are built</h4>
+    <ol class="walk">
+      <li><div class="tx">JUnit for the structure, <a class="t" href="#g-robolectric">Robolectric</a> for anything that needs an Android class &mdash; it runs the framework on your laptop, so <code>DataStore</code>, <code>Context</code> and resources all work without a phone or an emulator.</div></li>
+      <li><div class="tx"><code>kotlinx-coroutines-test</code>&rsquo;s <code>runTest</code> runs suspend functions and fast-forwards their delays, so a twenty-second window is tested in milliseconds.</div></li>
+      <li><div class="tx">MockWebServer stands in for the Worker in <code>LoveButtonApiTest</code>: a real HTTP server on localhost, so the client is exercised rather than mocked.</div></li>
+      <li><div class="tx">The pure functions &mdash; <code>advancesTo</code>, <code>windowClosed</code>, <code>receivedWins</code>, <code>cellColor</code>, <code>blinkAmount</code>, <code>swayOffsetPx</code> &mdash; exist as pure functions precisely so they can be tested like this. That is why so much logic sits outside the composables and the workers.</div></li>
+      <li><div class="tx">Run them with <code>./gradlew testDebugUnitTest</code>. They need a <a class="t" href="#g-jdk">JDK</a> and the Android SDK; the WSL checkout these documents were written in has neither, so the server suite is the one that runs here.</div></li>
+    </ol>
+
+    <h4>Now trace one tap yourself</h4>
+    <p>Open each file in turn and find the named function. This is the whole system in fourteen hops, and if you can follow it, you have read the app.</p>
+
+    <figure class="dia">
+      <div class="sv">
+      <svg class="min" viewBox="0 0 600 372" role="img" aria-label="One send, as files: SendWorker posts to send.ts, which pushes through to PushService on her phone; her receipts come back through receipts.ts to his PushService and WidgetStateWriter.">
+        <defs>
+          <marker id="tk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-mk" d="M0,0L10,5L0,10z"/></marker>
+          <marker id="tc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-mkc" d="M0,0L10,5L0,10z"/></marker>
+        </defs>
+        <path class="d-ln" style="stroke:var(--rule-2);stroke-width:1.5;stroke-dasharray:3 4" d="M78,46V366M300,46V366M522,46V366"/>
+        <rect class="d-a d-bx" x="18" y="10" width="120" height="32" rx="9"/>
+        <text class="d-t" x="78" y="31" text-anchor="middle">his phone</text>
+        <rect class="d-w d-bx" x="240" y="10" width="120" height="32" rx="9"/>
+        <text class="d-t" x="300" y="31" text-anchor="middle">the Worker</text>
+        <rect class="d-a d-bx" x="462" y="10" width="120" height="32" rx="9"/>
+        <text class="d-t" x="522" y="31" text-anchor="middle">her phone</text>
+
+        <text class="d-q" x="78" y="66" text-anchor="middle">SendAction &rarr; beginSend</text>
+        <path class="d-hot" d="M80,86H296" marker-end="url(#tc)"/>
+        <text class="d-l d-ht" x="188" y="79" text-anchor="middle">SendWorker &middot; POST /v1/send</text>
+        <text class="d-q" x="300" y="110" text-anchor="middle">send.ts: requireDevice, INSERT OR IGNORE</text>
+        <path class="d-hot" d="M302,132H518" marker-end="url(#tc)"/>
+        <text class="d-l d-ht" x="410" y="125" text-anchor="middle">fcm.ts &middot; HIGH</text>
+        <path class="d-ln d-ds" d="M298,160H82" marker-end="url(#tk)"/>
+        <text class="d-l" x="188" y="153" text-anchor="middle">{sent_at} &rarr; markSentAt</text>
+        <text class="d-q" x="522" y="184" text-anchor="middle">PushService &rarr; Notifications</text>
+        <path class="d-ln d-ds" d="M520,206H304" marker-end="url(#tk)"/>
+        <text class="d-l" x="410" y="199" text-anchor="middle">ReceiptWorker &middot; delivered</text>
+        <path class="d-ln d-ds" d="M298,234H82" marker-end="url(#tk)"/>
+        <text class="d-l" x="188" y="227" text-anchor="middle">receipts.ts &rarr; push</text>
+        <text class="d-q" x="78" y="258" text-anchor="middle">advanceWidgetState &middot; pink</text>
+        <path class="d-ln d-ds" d="M520,286H304" marker-end="url(#tk)"/>
+        <text class="d-l" x="410" y="279" text-anchor="middle">UnlockReceiver &middot; seen</text>
+        <path class="d-ln d-ds" d="M298,314H82" marker-end="url(#tk)"/>
+        <text class="d-l" x="188" y="307" text-anchor="middle">receipts.ts &rarr; push</text>
+        <text class="d-q" x="78" y="338" text-anchor="middle">CurrentSend.update &middot; gold</text>
+        <path class="d-hot" d="M18,362H50"/>
+        <text class="d-q" x="56" y="366">the message</text>
+        <path class="d-ln d-ds" d="M150,362H182"/>
+        <text class="d-q" x="188" y="366">the receipt</text>
+      </svg>
+      </div>
+      <figcaption>The same round trip as the field manual&rsquo;s, named by the file that does each part.</figcaption>
+    </figure>
+
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>File</th><th>Find</th></tr></thead>
+      <tbody>
+        <tr><td class="m">1</td><td class="m">widget/LoveWidget.kt</td><td><code>SendAction.onAction</code> &mdash; paints SENDING, calls beginSend</td></tr>
+        <tr><td class="m">2</td><td class="m">work/Sending.kt</td><td><code>beginSend</code> &mdash; mints the id, records it, queues two jobs</td></tr>
+        <tr><td class="m">3</td><td class="m">data/CurrentSend.kt</td><td><code>start</code> &mdash; the app screen&rsquo;s record</td></tr>
+        <tr><td class="m">4</td><td class="m">work/SendWorker.kt</td><td><code>doWork</code> &mdash; window check, pending entry, the call</td></tr>
+        <tr><td class="m">5</td><td class="m">data/LoveButtonApi.kt</td><td><code>send</code> &mdash; the only place the request is built</td></tr>
+        <tr><td class="m">6</td><td class="m">server/src/auth.ts</td><td><code>requireDevice</code> &mdash; the token becomes a person</td></tr>
+        <tr><td class="m">7</td><td class="m">server/src/routes/send.ts</td><td><code>recipientOf</code>, <code>INSERT OR IGNORE</code>, the fan-out</td></tr>
+        <tr><td class="m">8</td><td class="m">server/src/google-oauth.ts</td><td><code>getAccessToken</code> &mdash; cache hit, almost always</td></tr>
+        <tr><td class="m">9</td><td class="m">server/src/fcm.ts</td><td><code>sendPush</code> &mdash; data only, HIGH</td></tr>
+        <tr><td class="m">10</td><td class="m">push/PushService.kt</td><td><code>onMessageReceived</code>, the <code>"msg"</code> branch</td></tr>
+        <tr><td class="m">11</td><td class="m">push/Notifications.kt</td><td><code>postMessageNotification</code> &mdash; channel, sound, tray</td></tr>
+        <tr><td class="m">12</td><td class="m">work/ReceiptWorker.kt</td><td><code>doWork</code> &mdash; delivered, then seen</td></tr>
+        <tr><td class="m">13</td><td class="m">server/src/routes/receipts.ts</td><td>the 403 guard, <code>COALESCE</code>, the push back</td></tr>
+        <tr><td class="m">14</td><td class="m">widget/WidgetStateWriter.kt</td><td><code>advanceWidgetState</code> &mdash; the tile turns pink, then gold</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Then change something small</h4>
+    <div class="tw"><table>
+      <thead><tr><th>To change</th><th>Touch</th></tr></thead>
+      <tbody>
+        <tr><td>Add a fifth message</td><td><code>data/Messages.kt</code>, a grid in <code>pixel_icons.py</code>, a sound in <code>res/raw</code>, a widget subclass and its manifest entry &mdash; and one line in <code>server/src/messages.ts</code>.</td></tr>
+        <tr><td>Change the twenty seconds</td><td><code>PENDING_WINDOW_MS</code>, once. Everything else imports it.</td></tr>
+        <tr><td>Change a sound</td><td>The file in <code>res/raw</code>, and the channel has to be deleted and recreated &mdash; a channel&rsquo;s sound is frozen at creation.</td></tr>
+        <tr><td>Change a state colour</td><td><code>PixelPalette</code>, then re-run <code>pixel_icons.py</code> so the drawables match the Canvas.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note">
+      <span class="tag">Where to go next</span>
+      <p><code>docs/manual/field-manual.html</code> explains what the app <em>does</em>, in the same voice as this. <code>docs/HOW-IT-WAS-BUILT.md</code> is how the work was done: 153 commits, eleven days, and what went wrong on real phones first. <code>love-button-spec.md</code> is the binding document behind both.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ===================== GLOSSARY ===================== -->
+<section class="part ch" id="gloss">
+  <header class="part-head">
+    <svg class="pxn" data-n="G" role="img" aria-label="Glossary"></svg>
+    <p class="eyebrow">Back matter</p>
+    <h2>Glossary</h2>
+  </header>
+  <p class="part-note">Every abbreviation and term this tour leans on. The field manual has its own for the parts of the system; this one is about the code.</p>
+
+  <dl class="gloss">
+    <div id="g-activity"><dt>Activity</dt><dd>One Android screen, with a lifecycle the system drives. This app has exactly one, <code>MainActivity</code>.</dd></div>
+    <div id="g-api"><dt>API <small>Application Programming Interface</small></dt><dd>The set of requests one program will answer for another. Here: six endpoints.</dd></div>
+    <div id="g-application-class"><dt>Application class</dt><dd>Android object created before any other component in the process. Where one-per-process setup goes.</dd></div>
+    <div id="g-argb"><dt>ARGB</dt><dd>A colour packed into one 32-bit number: alpha, red, green, blue. <code>0xFFD81B60</code> is opaque crimson.</dd></div>
+    <div id="g-base64url"><dt>base64url</dt><dd>Base64 with <code>+</code> and <code>/</code> swapped for <code>-</code> and <code>_</code>, so the result is safe inside a URL. What a JWT&rsquo;s three parts are encoded in.</dd></div>
+    <div id="g-binding"><dt>Binding</dt><dd>A resource Cloudflare hands the Worker as a ready-made object &mdash; <code>env.DB</code>, <code>env.TOKEN_CACHE</code> &mdash; instead of a connection string.</dd></div>
+    <div id="g-broadcast-receiver"><dt>Broadcast receiver</dt><dd>A component Android starts when something happens system-wide: a reboot, an unlock, a widget update.</dd></div>
+    <div id="g-check-constraint"><dt>CHECK constraint</dt><dd>A rule the database enforces on every write. <code>CHECK (person IN (1,2))</code> makes a third person impossible.</dd></div>
+    <div id="g-coalesce"><dt>COALESCE</dt><dd>SQL for &ldquo;the first of these that is not empty&rdquo;. Used to keep the timestamp that was written first.</dd></div>
+    <div id="g-compose"><dt>Compose <small>Jetpack Compose</small></dt><dd>Android&rsquo;s way of writing screens as functions of data. Change the data and the framework redraws what depends on it.</dd></div>
+    <div id="g-cron"><dt>cron</dt><dd>A schedule written as five fields. <code>17 3 * * *</code> is 03:17 every day.</dd></div>
+    <div id="g-d1"><dt>D1</dt><dd>Cloudflare&rsquo;s SQLite database, reached through a binding.</dd></div>
+    <div id="g-data-class"><dt>data class</dt><dd>A Kotlin class that is just its fields: equality, copying and printing come for free.</dd></div>
+    <div id="g-datastore"><dt>DataStore</dt><dd>Android&rsquo;s small key-value file, written atomically and read as a Flow.</dd></div>
+    <div id="g-doze"><dt>Doze</dt><dd>Android&rsquo;s deep idle mode. It cuts idle apps off the network; only a high-priority push gets through.</dd></div>
+    <div id="g-epoch"><dt>Epoch seconds</dt><dd>Seconds since 1 January 1970, UTC. One number, no time zone.</dd></div>
+    <div id="g-eventual-consistency"><dt>Eventually consistent</dt><dd>A store where a write becomes visible everywhere shortly, not instantly. KV is one.</dd></div>
+    <div id="g-export-default"><dt>export default</dt><dd>The one value a JavaScript module offers as its main thing. For a Worker, the object holding <code>fetch</code> and <code>scheduled</code>.</dd></div>
+    <div id="g-flow"><dt>Flow</dt><dd>A Kotlin stream of values over time. A screen collecting one redraws whenever it emits.</dd></div>
+    <div id="g-framework"><dt>Framework</dt><dd>A library that calls your code rather than the other way round. Hono, Compose and WorkManager all do this.</dd></div>
+    <div id="g-glance"><dt>Glance</dt><dd>Compose for home-screen widgets: the same style of code, translated into the limited views a launcher can draw.</dd></div>
+    <div id="g-gradle"><dt>Gradle</dt><dd>The Android build tool. <code>build.gradle.kts</code> is a build script written in Kotlin.</dd></div>
+    <div id="g-hono"><dt>Hono</dt><dd>A small web framework for Workers. Matches a method and path to a function.</dd></div>
+    <div id="g-http-method"><dt>HTTP method</dt><dd>The verb of a request: <code>GET</code> to read, <code>POST</code> to send something, <code>DELETE</code> to remove.</dd></div>
+    <div id="g-idempotent"><dt>Idempotent</dt><dd>Doing it twice has the same effect as doing it once. Both receipts are.</dd></div>
+    <div id="g-index"><dt>Index</dt><dd>A lookup shortcut the database maintains so one shape of query stays fast.</dd></div>
+    <div id="g-interface"><dt>interface</dt><dd>In TypeScript, a description of a shape, checked at compile time and gone at runtime.</dd></div>
+    <div id="g-ip-address"><dt>IP address</dt><dd>The network address a request came from. Cloudflare passes it as <code>CF-Connecting-IP</code>.</dd></div>
+    <div id="g-jdk"><dt>JDK <small>Java Development Kit</small></dt><dd>What compiles and runs Kotlin and Java. Android Studio ships one.</dd></div>
+    <div id="g-json"><dt>JSON</dt><dd>The text format for structured data used by every reply here: <code>{"ok":true}</code>.</dd></div>
+    <div id="g-jwt"><dt>JWT <small>JSON Web Token</small></dt><dd>Three base64url chunks joined by dots: header, claims, signature. Here it proves the Worker holds Google&rsquo;s private key.</dd></div>
+    <div id="g-kotlin"><dt>Kotlin</dt><dd>The language the app is written in. Runs on the Java virtual machine, with null-safety and coroutines built in.</dd></div>
+    <div id="g-kv"><dt>KV</dt><dd>Cloudflare&rsquo;s key-value store, used here as a cache with an expiry.</dd></div>
+    <div id="g-middleware"><dt>Middleware</dt><dd>Code that runs before a handler and can stop the request or add to it. <code>requireDevice</code> is the only one here.</dd></div>
+    <div id="g-monotonic"><dt>Monotonic</dt><dd>Only ever moves one way. The ladder never goes back down.</dd></div>
+    <div id="g-notification-channel"><dt>Notification channel</dt><dd>Since Android 8, the category a notification is posted on. The channel owns the sound, and it is frozen when the channel is created.</dd></div>
+    <div id="g-okhttp"><dt>OkHttp</dt><dd>The HTTP client the app uses. Small, and it handles connection reuse and headers.</dd></div>
+    <div id="g-pem"><dt>PEM</dt><dd>A key as text: base64 between <code>-----BEGIN-----</code> and <code>-----END-----</code> lines.</dd></div>
+    <div id="g-prepared-statement"><dt>Prepared statement</dt><dd>SQL with <code>?</code> placeholders, values sent separately. The value is never parsed as SQL.</dd></div>
+    <div id="g-primary-key"><dt>Primary key</dt><dd>The column that identifies a row uniquely. Here the phone chooses it, so the server validates it.</dd></div>
+    <div id="g-robolectric"><dt>Robolectric</dt><dd>Runs the Android framework on a laptop, so tests that need <code>Context</code> or resources need no phone.</dd></div>
+    <div id="g-rs256"><dt>RS256</dt><dd>RSA signing with SHA-256. What Google accepts for a service-account JWT.</dd></div>
+    <div id="g-sealed"><dt>sealed</dt><dd>A Kotlin type with a closed set of subtypes, so the compiler can check every case was handled.</dd></div>
+    <div id="g-secret"><dt>Secret</dt><dd>A value uploaded to Cloudflare encrypted, never committed and never readable again.</dd></div>
+    <div id="g-service"><dt>Service</dt><dd>An Android component with no screen. <code>PushService</code> is started by Play Services when a push arrives.</dd></div>
+    <div id="g-sha-256"><dt>SHA-256</dt><dd>A one-way fingerprint. Easy to compute, impossible to reverse, so it can stand in for a stored token.</dd></div>
+    <div id="g-sql-injection"><dt>SQL injection</dt><dd>An attack where text sent to a server gets run as SQL. Prepared statements make it impossible.</dd></div>
+    <div id="g-sqlite"><dt>SQLite</dt><dd>A small, widely used database. D1 is Cloudflare&rsquo;s.</dd></div>
+    <div id="g-suspend"><dt>suspend function</dt><dd>A Kotlin function that can pause while it waits and resume later, without blocking its thread.</dd></div>
+    <div id="g-timing-attack"><dt>Timing attack</dt><dd>Guessing a secret by measuring how long each wrong guess takes to be rejected.</dd></div>
+    <div id="g-total-order"><dt>Total order</dt><dd>An ordering where any two items can be compared and everyone gets the same answer.</dd></div>
+    <div id="g-type"><dt>Type parameter</dt><dd>A type passed to another type, like <code>Hono&lt;App&gt;</code>, so the compiler knows what is inside.</dd></div>
+    <div id="g-unregistered"><dt>UNREGISTERED</dt><dd>Google&rsquo;s answer for a push address that will never work again &mdash; the only one that deletes a device row.</dd></div>
+    <div id="g-vectordrawable"><dt>VectorDrawable</dt><dd>An Android picture stored as shapes in XML. Scales to any size; cannot be animated cell by cell.</dd></div>
+    <div id="g-vitest"><dt>Vitest</dt><dd>The test runner the server uses. With Cloudflare&rsquo;s pool it runs tests inside the real Worker runtime.</dd></div>
+    <div id="g-webcrypto"><dt>WebCrypto</dt><dd>The standard cryptography API built into browsers and Workers. There is no Node <code>crypto</code> here.</dd></div>
+    <div id="g-workerd"><dt>workerd</dt><dd>The program that runs Cloudflare Workers, live and in the tests.</dd></div>
+    <div id="g-workmanager"><dt>WorkManager</dt><dd>Android&rsquo;s queue for background jobs that must finish even if the app is killed. Jobs are saved to disk and retried.</dd></div>
+  </dl>
+</section>
+
+</main>
+
+<footer class="end">Love Button 1.0 &middot; Code tour, September 2026 &middot; source: docs/manual/code-tour.html &middot; what it does: docs/manual/field-manual.html &middot; how it was built: docs/HOW-IT-WAS-BUILT.md</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var P = { border: "#D1447E", shine: "#FFD9E8", sent: "#D81B60", delivered: "#FF6FA5",
+            gold: "#FFC64B", idle: "#C98BA8", failed: "#A9A2AD" };
+  var NS = "http://www.w3.org/2000/svg";
+
+  /* The app's heart grid, from widget/PixelGrids.kt (generated by pixel_icons.py). */
+  var GRIDS = { "heart": ["................", "...XXX....XXX...", "..XssXX..XXXXX..", ".XssXXXXXXXXXXX.", "XXsXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX", ".XXXXXXXXXXXXXX.", ".XXXXXXXXXXXXXX.", "..XXXXXXXXXXXX..", "...XXXXXXXXXX...", "....XXXXXXXX....", ".....XXXXXX.....", "......XXXX......", ".......XX......."] };
+
+  function el(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  /* Coloured exactly as ui/PixelArt.kt cellColor(). */
+  function solid(ch) { return ch === "X" || ch === "s" || ch === "d"; }
+  function isBorderCell(g, r, c) {
+    if (r === 0 || c === 0 || r === g.length - 1 || c === g[r].length - 1) return true;
+    return g[r - 1][c] === "." || g[r + 1][c] === "." || g[r][c - 1] === "." || g[r][c + 1] === ".";
+  }
+  function cellColor(g, r, c, state) {
+    var ch = g[r][c];
+    if (!solid(ch)) return null;
+    var border = isBorderCell(g, r, c);
+    if (ch === "s") return P.shine;
+    if (state === "seen") return border ? P.gold : P.delivered;
+    return border ? P.border : P.sent;
+  }
+  function drawGrid(host) {
+    var g = GRIDS[host.getAttribute("data-grid")];
+    if (!g) return;
+    var state = host.getAttribute("data-state") || "sent";
+    var byColour = {};
+    for (var r = 0; r < g.length; r++) for (var c = 0; c < g[r].length; c++) {
+      var col = cellColor(g, r, c, state);
+      if (col) (byColour[col] = byColour[col] || []).push("M" + c + "," + r + "h1v1h-1z");
+    }
+    var svg = el("svg", { viewBox: "0 0 " + g[0].length + " " + g.length, "shape-rendering": "crispEdges" });
+    var label = host.getAttribute("data-label");
+    if (label) { svg.setAttribute("role", "img"); svg.setAttribute("aria-label", label); }
+    else svg.setAttribute("aria-hidden", "true");
+    Object.keys(byColour).forEach(function (k) { svg.appendChild(el("path", { fill: k, d: byColour[k].join("") })); });
+    host.appendChild(svg);
+  }
+
+  /* Part numbers in 3 x 5 pixel digits, like the CALL icon's letters. */
+  var DIGITS = {
+    "0": ["111", "101", "101", "101", "111"], "1": ["010", "110", "010", "010", "111"],
+    "2": ["111", "001", "111", "100", "111"], "3": ["111", "001", "111", "001", "111"],
+    "4": ["101", "101", "111", "001", "001"], "5": ["111", "100", "111", "001", "111"],
+    "G": ["111", "100", "101", "101", "111"]
+  };
+  function drawNumeral(svg) {
+    var text = svg.getAttribute("data-n") || "";
+    var w = text.length * 4 - 1, d = "";
+    for (var i = 0; i < text.length; i++) {
+      var rows = DIGITS[text[i]];
+      if (!rows) continue;
+      for (var r = 0; r < 5; r++) for (var c = 0; c < 3; c++) {
+        if (rows[r][c] === "1") d += "M" + (i * 4 + c) + "," + r + "h1v1h-1z";
+      }
+    }
+    svg.setAttribute("viewBox", "0 0 " + w + " 5");
+    svg.setAttribute("shape-rendering", "crispEdges");
+    svg.style.aspectRatio = w + " / 5";
+    var p = el("path", { d: d });
+    p.setAttribute("style", "fill:var(--crimson)");
+    svg.appendChild(p);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-grid]"), drawGrid);
+  Array.prototype.forEach.call(document.querySelectorAll("svg.pxn[data-n]"), drawNumeral);
+
+  /* Glossary terms: tap for the meaning in place (web only). */
+  var pop = null;
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest ? e.target.closest("a.t") : null;
+    if (!a) { if (pop && !pop.contains(e.target)) closePop(); return; }
+    var id = (a.getAttribute("href") || "").slice(1);
+    var entry = id && document.getElementById(id);
+    if (!entry) return;
+    e.preventDefault();
+    closePop();
+    var dt = entry.querySelector("dt"), dd = entry.querySelector("dd");
+    pop = document.createElement("div");
+    pop.className = "gpop";
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-label", dt.textContent);
+    pop.innerHTML = '<button class="gclose" type="button" aria-label="Close">&times;</button>' +
+      '<p class="gt"></p><div class="gd"></div><a class="gx" href="#' + id + '">Open in the glossary &rarr;</a>';
+    pop.querySelector(".gt").innerHTML = dt.innerHTML;
+    pop.querySelector(".gd").innerHTML = dd.innerHTML;
+    document.body.appendChild(pop);
+    var r = a.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    var left = Math.min(Math.max(16, r.left), vw - pw - 16);
+    var top = r.bottom + 8;
+    if (top + ph > vh - 12) top = Math.max(12, r.top - ph - 8);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+    pop.querySelector(".gclose").addEventListener("click", closePop);
+    pop.querySelector(".gx").addEventListener("click", closePop);
+    pop.querySelector(".gclose").focus({ preventScroll: true });
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePop(); });
+  window.addEventListener("resize", closePop);
+  var lastY = window.scrollY;
+  window.addEventListener("scroll", function () {
+    if (pop && Math.abs(window.scrollY - lastY) > 60) closePop();
+    if (!pop) lastY = window.scrollY;
+  }, { passive: true });
+
+  /* Highlight the step you are reading in the side list. */
+  var links = Array.prototype.slice.call(document.querySelectorAll(".toc-side a"));
+  var secs = links.map(function (a) { return document.querySelector(a.getAttribute("href")); }).filter(Boolean);
+  if ("IntersectionObserver" in window && secs.length) {
+    var vis = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { vis[en.target.id] = en.isIntersecting; });
+      var on = null;
+      secs.forEach(function (s) { if (!on && vis[s.id]) on = s.id; });
+      if (on) links.forEach(function (a) { a.classList.toggle("on", a.getAttribute("href") === "#" + on); });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    secs.forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>

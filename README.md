@@ -14,6 +14,7 @@ An Android app for exactly two people.
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
 **[📖 Read the Field Manual](docs/Love%20Button%20Field%20Manual.pdf)** ([dark](docs/Love%20Button%20Field%20Manual_dark.pdf))
+&nbsp;·&nbsp; [Code Tour](docs/Love%20Button%20Code%20Tour.pdf)
 &nbsp;·&nbsp; [Spec](love-button-spec.md)
 &nbsp;·&nbsp; [Setup guide](docs/MANUAL-SETUP.md)
 &nbsp;·&nbsp; [Server](server/)
@@ -146,6 +147,7 @@ APK.
 | Document | What it covers |
 |---|---|
 | **[Field Manual](docs/Love%20Button%20Field%20Manual.pdf)** ([dark](docs/Love%20Button%20Field%20Manual_dark.pdf)) | How the Love Button works — 23 A5 pages with a glossary, reads well on a phone. Start here. Source: [`docs/manual/field-manual.html`](docs/manual/field-manual.html). |
+| **[Code Tour](docs/Love%20Button%20Code%20Tour.pdf)** ([dark](docs/Love%20Button%20Code%20Tour_dark.pdf)) | A reading order for the codebase: 24 steps, which file to open and what to look for in it. Source: [`docs/manual/code-tour.html`](docs/manual/code-tour.html). |
 | **[`docs/HOW-IT-WAS-BUILT.md`](docs/HOW-IT-WAS-BUILT.md)** | The other half: how the work was done, in what order, and what went wrong on real phones first. |
 | **[`love-button-spec.md`](love-button-spec.md)** | The binding spec: what was built, what was deliberately not, and why. |
 | **[`docs/MANUAL-SETUP.md`](docs/MANUAL-SETUP.md)** | Everything that needs a browser login or a phone in your hand. |

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Prints docs/manual/field-manual.html to the A5 PDFs in docs/.
+ * Prints the documents in docs/manual/ to the A5 PDFs in docs/.
  *
- *   node scripts/manual-pdf.mjs            # both, light and dark
- *   node scripts/manual-pdf.mjs --light    # just the light one
+ *   node scripts/manual-pdf.mjs                    # every document, light and dark
+ *   node scripts/manual-pdf.mjs code-tour          # just that one
+ *   node scripts/manual-pdf.mjs code-tour --light  # just its light copy
  *
  * Drives a headless Chromium over the DevTools protocol: the manual's print
  * styles (@page A5, the running page number) do the layout, so this only has
@@ -24,27 +25,33 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SOURCE = join(ROOT, "docs/manual/field-manual.html");
-const OUT_LIGHT = join(ROOT, "docs/Love Button Field Manual.pdf");
-const OUT_DARK = join(ROOT, "docs/Love Button Field Manual_dark.pdf");
 const PORT = 9333;
 
-/* Chapter titles repeat inside the text ("The server" is also a row in a
-   chapter 1 table), so the first pass is marked instead of searched: a short
-   invisible tag is added to each chapter's eyebrow line, and the page it prints
-   on is that chapter's page. Transparent, and short enough not to rewrap the
-   line it joins, so the marked run paginates exactly like the shipped one. */
-const CHAPTERS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "cg"];
+/** Source in docs/manual/, name of the pair of PDFs it produces in docs/. */
+const DOCS = {
+  "field-manual": "Love Button Field Manual",
+  "code-tour": "Love Button Code Tour",
+};
+
+/* Titles repeat inside the text ("The server" is also a row in a chapter 1
+   table), so the first pass is marked instead of searched: a short invisible tag
+   goes on each chapter's and each step's own line, and the page it prints on is
+   that section's page. Transparent, and short enough not to rewrap the line it
+   joins, so the marked run paginates exactly like the shipped one. */
 const MARK = (id) => "ZZ" + id.toUpperCase() + "ZZ";
 const MARK_JS = `(() => {
-  for (const sec of document.querySelectorAll("section.ch")) {
-    const line = sec.querySelector(".eyebrow") || sec.querySelector("h2");
+  const ids = [];
+  for (const sec of document.querySelectorAll("section.ch, article.step")) {
+    if (!sec.id) continue;
+    const line = sec.querySelector(".eyebrow, .step-no") || sec.querySelector("h2, h3");
     if (!line) continue;
     const tag = document.createElement("span");
     tag.style.color = "transparent";
     tag.textContent = " ZZ" + sec.id.toUpperCase() + "ZZ";
     line.appendChild(tag);
+    ids.push(sec.id);
   }
+  return ids.join(",");
 })()`;
 
 /* Dark reading copy: the palette is all custom properties, so swapping the
@@ -115,16 +122,20 @@ class Cdp {
   }
 }
 
-async function render({ dark, mark, pageNumbers, out }) {
+async function render({ source, dark, mark, pageNumbers, out }) {
   const page = await Cdp.open(await newTab());
+  let marked = [];
   await page.send("Page.enable");
   await page.send("Emulation.setEmulatedMedia", { media: "print" });
-  await page.send("Page.navigate", { url: "file://" + SOURCE });
+  await page.send("Page.navigate", { url: "file://" + source });
   await page.waitForEvent("Page.loadEventFired");
   await page.send("Runtime.evaluate", { expression: "document.fonts.ready", awaitPromise: true });
   await sleep(600); // the webfonts land after ready on a cold cache
 
-  if (mark) await page.send("Runtime.evaluate", { expression: MARK_JS });
+  if (mark) {
+    const { result } = await page.send("Runtime.evaluate", { expression: MARK_JS });
+    marked = String(result.value ?? "").split(",").filter(Boolean);
+  }
   if (dark) {
     await page.send("Runtime.evaluate", {
       expression: `(() => { const s = document.createElement("style");
@@ -147,6 +158,7 @@ async function render({ dark, mark, pageNumbers, out }) {
   });
   writeFileSync(out, Buffer.from(data, "base64"));
   page.ws.close();
+  return marked;
 }
 
 async function newTab() {
@@ -154,8 +166,8 @@ async function newTab() {
   return (await res.json()).webSocketDebuggerUrl;
 }
 
-/** Which page did each chapter start on? Read it back out of the PDF. */
-function pageNumbersFrom(pdf) {
+/** Which page did each marked section start on? Read it back out of the PDF. */
+function pageNumbersFrom(pdf, ids) {
   let text;
   try {
     text = execFileSync("pdftotext", ["-layout", pdf, "-"], { encoding: "utf8", maxBuffer: 64e6 });
@@ -165,15 +177,26 @@ function pageNumbersFrom(pdf) {
   }
   const pages = text.split("\f");
   const found = {};
-  for (const id of CHAPTERS) {
+  for (const id of ids) {
     const at = pages.findIndex((p) => p.includes(MARK(id)));
     if (at >= 0) found[id] = String(at + 1);
   }
   return found;
 }
 
-const only = process.argv.includes("--light") ? "light"
-  : process.argv.includes("--dark") ? "dark" : "both";
+const args = process.argv.slice(2);
+const only = args.includes("--light") ? "light" : args.includes("--dark") ? "dark" : "both";
+
+const named = args.filter((a) => !a.startsWith("--"));
+for (const name of named) {
+  if (!DOCS[name]) throw new Error(`unknown document "${name}" — one of: ${Object.keys(DOCS).join(", ")}`);
+}
+const docs = (named.length ? named : Object.keys(DOCS)).map((name) => ({
+  name,
+  source: join(ROOT, `docs/manual/${name}.html`),
+  light: join(ROOT, `docs/${DOCS[name]}.pdf`),
+  dark: join(ROOT, `docs/${DOCS[name]}_dark.pdf`),
+}));
 
 const profile = mkdtempSync(join(tmpdir(), "manual-pdf-"));
 const chrome = spawn(findChrome(), [
@@ -190,16 +213,16 @@ try {
 
   /* The dark copy insets with padding instead of page margins, so it
      paginates differently — each variant measures itself. */
-  const variants = [
-    ["light", OUT_LIGHT, false], ["dark", OUT_DARK, true],
-  ].filter(([name]) => only === "both" || only === name);
-
-  for (const [name, out, dark] of variants) {
-    const scratch = join(profile, `pass1-${name}.pdf`);
-    await render({ dark, mark: true, pageNumbers: null, out: scratch });
-    const numbers = pageNumbersFrom(scratch);
-    await render({ dark, mark: false, pageNumbers: numbers, out });
-    console.log("wrote", out, numbers ? JSON.stringify(numbers) : "(no page numbers)");
+  for (const doc of docs) {
+    for (const variant of ["light", "dark"]) {
+      if (only !== "both" && only !== variant) continue;
+      const dark = variant === "dark";
+      const scratch = join(profile, `pass1-${doc.name}-${variant}.pdf`);
+      const ids = await render({ source: doc.source, dark, mark: true, pageNumbers: null, out: scratch });
+      const numbers = pageNumbersFrom(scratch, ids);
+      await render({ source: doc.source, dark, mark: false, pageNumbers: numbers, out: doc[variant] });
+      console.log("wrote", doc[variant], numbers ? `(${Object.keys(numbers).length} sections numbered)` : "(no page numbers)");
+    }
   }
 } finally {
   chrome.kill();
